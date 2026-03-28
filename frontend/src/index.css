@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #09090b;
+  color: #fafafa;
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #111113; }
+::-webkit-scrollbar-thumb { background: #2a2a2e; border-radius: 2px; }
+
+input, select, textarea, button { font-family: 'DM Sans', system-ui, sans-serif; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+.fu { animation: fadeUp 0.3s ease both; }
+.fu1 { animation: fadeUp 0.3s 0.05s ease both; }
+.fu2 { animation: fadeUp 0.3s 0.10s ease both; }
+.fu3 { animation: fadeUp 0.3s 0.15s ease both; }
+.fu4 { animation: fadeUp 0.3s 0.20s ease both; }

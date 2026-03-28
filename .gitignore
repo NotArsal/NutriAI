@@ -1,0 +1,28 @@
+# Node.js
+frontend/node_modules/
+frontend/dist/
+frontend/.nx/
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+backend/env/
+backend/venv/
+backend/.venv/
+
+# Vercel
+.vercel/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

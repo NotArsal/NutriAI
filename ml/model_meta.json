@@ -1,0 +1,76 @@
+{
+  "diet_classes": [
+    "Balanced",
+    "Low_Carb",
+    "Low_Sodium"
+  ],
+  "meal_classes": [
+    "Balanced-Macro",
+    "Heart-Healthy",
+    "High-Protein"
+  ],
+  "encoders": {
+    "Gender": [
+      "Female",
+      "Male"
+    ],
+    "Disease_Type": [
+      "Diabetes",
+      "Hypertension",
+      "None",
+      "Obesity"
+    ],
+    "Severity": [
+      "Mild",
+      "Moderate",
+      "Severe"
+    ],
+    "Physical_Activity_Level": [
+      "Active",
+      "Moderate",
+      "Sedentary"
+    ],
+    "Dietary_Restrictions": [
+      "Low_Sodium",
+      "Low_Sugar",
+      "None"
+    ],
+    "Allergies": [
+      "Gluten",
+      "None",
+      "Peanuts"
+    ],
+    "Preferred_Cuisine": [
+      "Chinese",
+      "Indian",
+      "Italian",
+      "Mexican"
+    ]
+  },
+  "feature_cols": [
+    "Age",
+    "Weight_kg",
+    "Height_cm",
+    "BMI",
+    "Daily_Caloric_Intake",
+    "Cholesterol_mg/dL",
+    "Blood_Pressure_mmHg",
+    "Glucose_mg/dL",
+    "Weekly_Exercise_Hours",
+    "Adherence_to_Diet_Plan",
+    "Dietary_Nutrient_Imbalance_Score",
+    "Gender_enc",
+    "Disease_Type_enc",
+    "Severity_enc",
+    "Physical_Activity_Level_enc",
+    "Dietary_Restrictions_enc",
+    "Allergies_enc",
+    "Preferred_Cuisine_enc"
+  ],
+  "stats": {
+    "n_samples": 1000,
+    "diet_cv_accuracy": 1.0,
+    "risk_rmse": 3.9324470049442137,
+    "meal_cv_accuracy": 1.0
+  }
+}
