@@ -3,16 +3,16 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #09090b;
-  color: #fafafa;
+  background: #f8fafc;
+  color: #0f172a;
   font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 14px;
   line-height: 1.5;
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: #111113; }
-::-webkit-scrollbar-thumb { background: #2a2a2e; border-radius: 2px; }
+::-webkit-scrollbar-track { background: #f1f5f9; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 2px; }
 
 input, select, textarea, button { font-family: 'DM Sans', system-ui, sans-serif; }
 

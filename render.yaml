@@ -1,0 +1,18 @@
+# render.yaml — Render.com deployment config
+# Commit this to your repo root. Render auto-detects it.
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: nutriplanner-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://nutriplanner.vercel.app  # ← update to your actual Vercel URL after first deploy
+      - key: PYTHON_VERSION
+        value: 3.11.0

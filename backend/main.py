@@ -1,7 +1,8 @@
 """
-NutriAI — FastAPI Backend
-Run: uvicorn main:app --reload --port 8000
-Docs: http://localhost:8000/docs
+NutriPlanner — FastAPI Backend
+Run locally : uvicorn main:app --reload --port 8000
+Deploy      : Render.com → uvicorn main:app --host 0.0.0.0 --port $PORT
+Docs        : http://localhost:8000/docs
 """
 
 from fastapi import FastAPI, HTTPException
@@ -13,14 +14,25 @@ from pathlib import Path
 
 # ── App ────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="NutriAI API",
+    title="NutriPlanner API",
     description="ML-powered clinical nutrition recommendation engine",
-    version="1.0.0",
+    version="2.0.0",
 )
+
+# ── CORS ───────────────────────────────────────────────────────────
+# Set ALLOWED_ORIGINS env var on Render to your Vercel URL
+# e.g.  ALLOWED_ORIGINS=https://nutriplanner.vercel.app
+_raw = os.environ.get("ALLOWED_ORIGINS", "")
+ALLOWED_ORIGINS = [o.strip() for o in _raw.split(",") if o.strip()] or [
+    "http://localhost:5173",
+    "http://localhost:4173",
+    "http://localhost:3000",
+]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",  # all Vercel preview URLs
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -116,10 +128,12 @@ def generate_clinical_assistant_response(patient: PatientInput, messages: List[d
         return res
     
     if "meal" in user_msg or "eat" in user_msg or "schedule" in user_msg:
-        res = f"Based on your {patient.cuisine} preference, here are personalized suggestions:\n"
-        res += "1. **Breakfast**: High-fiber options like oats or protein-rich egg whites.\n"
-        res += "2. **Lunch/Dinner**: Focus on lean protein (chicken/fish/paneer) with a 2:1 vegetable-to-grain ratio.\n"
-        res += f"3. **Restriction**: Strictly avoid {patient.allergies if patient.allergies != 'None' else 'processed sugars'}."
+        allergy_note = f"strictly avoid all {patient.allergies} — this includes any dish containing {patient.allergies.lower()}" if patient.allergies != "None" else "avoid processed sugars and refined carbohydrates"
+        res = f"Based on your {patient.cuisine} cuisine preference, here are personalised suggestions:\n"
+        res += "1. **Breakfast**: High-fibre options like oats upma or protein-rich egg whites (allergen-free preparation).\n"
+        res += "2. **Lunch/Dinner**: Focus on lean protein (chicken/fish/paneer if no dairy allergy) with a 2:1 vegetable-to-grain ratio.\n"
+        res += f"3. **Critical restriction**: {allergy_note.capitalize()}. Always check ingredient labels.\n"
+        res += "Always consult your physician or dietitian for clinical decisions."
         return res
 
     if "risk" in user_msg:
@@ -251,19 +265,29 @@ MEALS_DB = {
     ],
 }
 
+ALLERGEN_KEYWORDS = {
+    "Peanuts": ["peanut", "groundnut"],
+    "Gluten":  ["roti","chapati","naan","bread","pasta","bun","tortilla","burrito",
+                "quesadilla","wrap","dumpling","tostada","bruschetta","couscous","semolina"],
+    "Dairy":   ["paneer","curd","yogurt","cheese","cream","butter","ghee","milk","lassi"],
+    "None":    [],
+}
+
 def get_meals(meal_cat: str, cuisine: str, restrictions: str, allergies: str) -> list:
     key = (meal_cat, cuisine)
     meals = MEALS_DB.get(key, MEALS_DB.get((meal_cat, "Indian"), []))
-    # Filter allergies
-    filtered = []
-    for m in meals:
-        name_lower = m["name"].lower()
-        if allergies == "Gluten" and any(w in name_lower for w in ["bread","pasta","roti","chapati","naan","bun","tortilla","burrito","quesadilla","wrap","dumpling"]):
-            continue
-        if allergies == "Peanuts" and "peanut" in name_lower:
-            continue
-        filtered.append(m)
-    return filtered if filtered else meals
+    keywords = ALLERGEN_KEYWORDS.get(allergies, [allergies.lower()] if allergies and allergies != "None" else [])
+    if not keywords:
+        return meals
+    filtered = [
+        m for m in meals
+        if not any(kw in m["name"].lower() for kw in keywords)
+    ]
+    # Only fall back to unfiltered list if zero meals remain — prefer safe empty over unsafe full
+    return filtered if filtered else [
+        {"name": f"Custom allergen-free meal (ask your dietitian for {allergies}-free options)",
+         "kcal": 400, "protein": 20, "carbs": 40, "fat": 12, "time": "Any"}
+    ]
 
 # ── Routes ─────────────────────────────────────────────────────────
 

@@ -16,12 +16,12 @@ const mapFormToPatient = (f) => ({
    DESIGN TOKENS
 ═══════════════════════════════════════════════════════════════════ */
 const C = {
-  bg0:"#09090b", bg1:"#111113", bg2:"#18181b", bg3:"#1f1f23", bg4:"#27272a",
-  border:"#2a2a2e", borderHi:"#3f3f46",
-  t0:"#fafafa", t1:"#a1a1aa", t2:"#52525b", t3:"#3f3f46",
-  green:"#22c55e", greenDim:"#16a34a", greenFg:"#4ade80",
-  amber:"#f59e0b", red:"#ef4444", blue:"#3b82f6", teal:"#14b8a6", purple:"#a78bfa",
-  card:"#111113",
+  bg0:"#f8fafc", bg1:"#ffffff", bg2:"#f1f5f9", bg3:"#e8edf4", bg4:"#dde3ed",
+  border:"#e2e8f0", borderHi:"#cbd5e1",
+  t0:"#0f172a", t1:"#475569", t2:"#94a3b8", t3:"#cbd5e1",
+  green:"#16a34a", greenDim:"#15803d", greenFg:"#22c55e",
+  amber:"#d97706", red:"#dc2626", blue:"#2563eb", teal:"#0d9488", purple:"#7c3aed",
+  card:"#ffffff",
 };
 
 const F = { sans:"'DM Sans',system-ui,sans-serif", mono:"'DM Mono','Fira Code',monospace" };
@@ -114,7 +114,7 @@ function FSelect({ label, hint, value, onChange, options }) {
         style={{ width:"100%", padding:"8px 28px 8px 10px", background:C.bg2,
           border:`1px solid ${focused ? C.green : C.border}`, borderRadius:6, color:C.t0, fontSize:13,
           outline:"none", appearance:"none", transition:"border-color .15s",
-          backgroundImage:`url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2352525b' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
+          backgroundImage:`url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")`,
           backgroundRepeat:"no-repeat", backgroundPosition:"right 10px center" }}>
         {options.map(o => <option key={o.v||o} value={o.v||o} style={{ background:C.bg2 }}>{o.l||o}</option>)}
       </select>
@@ -358,7 +358,7 @@ function Sidebar({ active, onNav, result }) {
             </svg>
           </div>
           <div>
-            <div style={{ fontSize:14, fontWeight:600, color:C.t0 }}>NutriAI</div>
+            <div style={{ fontSize:14, fontWeight:600, color:C.t0 }}>NutriPlanner</div>
             <div style={{ fontSize:10, color:C.t2, letterSpacing:".05em" }}>Clinical Platform</div>
           </div>
         </div>
@@ -405,7 +405,7 @@ function Sidebar({ active, onNav, result }) {
 /* ═══════════════════════════════════════════════════════════════════
    PAGE: ONBOARDING FORM
 ═══════════════════════════════════════════════════════════════════ */
-function OnboardingForm({ onSubmit }) {
+function OnboardingForm({ onSubmit, submitting = false }) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     age:45, gender:"Male", weight:75, height:170,
@@ -477,7 +477,7 @@ function OnboardingForm({ onSubmit }) {
             </svg>
           </div>
           <div>
-            <div style={{ fontSize:16, fontWeight:600, color:C.t0 }}>NutriAI</div>
+            <div style={{ fontSize:16, fontWeight:600, color:C.t0 }}>NutriPlanner</div>
             <div style={{ fontSize:11, color:C.t2, letterSpacing:".04em" }}>Clinical Nutrition Platform</div>
           </div>
         </div>
@@ -509,7 +509,9 @@ function OnboardingForm({ onSubmit }) {
             }
             {step < STEPS.length - 1
               ? <Btn onClick={() => setStep(s => s+1)}>Continue →</Btn>
-              : <Btn onClick={() => onSubmit(form)}>Generate report →</Btn>
+              : <Btn onClick={() => onSubmit(form)} disabled={submitting}>
+                  {submitting ? <><Spinner /> Analysing…</> : <>Generate report →</>}
+                </Btn>
             }
           </div>
         </Card>
@@ -686,8 +688,26 @@ function DashboardPage({ form, result }) {
 /* ═══════════════════════════════════════════════════════════════════
    PAGE: MEAL PLAN
 ═══════════════════════════════════════════════════════════════════ */
+// ── Allergen keyword map ────────────────────────────────────────────
+const ALLERGEN_KEYWORDS = {
+  "Peanuts": ["peanut","groundnut"],
+  "Gluten":  ["roti","chapati","naan","bread","pasta","bun","tortilla","burrito","quesadilla","wrap","dumpling","tostada","bruschetta","couscous","semolina"],
+  "Dairy":   ["paneer","curd","yogurt","cheese","cream","butter","ghee","milk","lassi"],
+  "Gluten,Dairy": ["roti","chapati","naan","bread","pasta","bun","tortilla","burrito","quesadilla","wrap","dumpling","paneer","curd","yogurt"],
+};
+
+function filterMealsByAllergen(meals, allergies) {
+  if (!allergies || allergies === "None") return meals;
+  const keywords = ALLERGEN_KEYWORDS[allergies] || [allergies.toLowerCase()];
+  return meals.filter(m => {
+    const name = m.name.toLowerCase();
+    return !keywords.some(kw => name.includes(kw));
+  });
+}
+
 function MealPlanPage({ form, result }) {
-  const meals = MEALS_DB[result.mealCat]?.[form.cuisine] || MEALS_DB[result.mealCat]?.Indian || [];
+  const rawMeals = MEALS_DB[result.mealCat]?.[form.cuisine] || MEALS_DB[result.mealCat]?.Indian || [];
+  const meals = filterMealsByAllergen(rawMeals, form.allergies);
   const plan = DIET_PLANS[result.diet];
   const totalKcal = meals.reduce((a,m) => a+m.kcal, 0);
 
@@ -1006,7 +1026,7 @@ function ReportPage({ form, result }) {
   const printReport = () => {
     const w = window.open("", "_blank");
     w.document.write(`
-      <html><head><title>NutriAI Report — ${new Date().toLocaleDateString()}</title>
+      <html><head><title>NutriPlanner Report — ${new Date().toLocaleDateString()}</title>
       <style>
         body { font-family: 'DM Sans', sans-serif; color: #111; background: #fff; max-width: 700px; margin: 40px auto; padding: 0 24px; font-size: 13px; line-height: 1.6; }
         h1 { font-size: 22px; font-weight: 600; margin: 0 0 4px; }
@@ -1024,7 +1044,7 @@ function ReportPage({ form, result }) {
         footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #9ca3af; }
       </style></head><body>
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
-        <div><h1>NutriAI Clinical Report</h1><div style="color:#6b7280;font-size:12px">Generated ${new Date().toLocaleDateString("en-IN", { weekday:"long",year:"numeric",month:"long",day:"numeric" })}</div></div>
+        <div><h1>NutriPlanner Clinical Report</h1><div style="color:#6b7280;font-size:12px">Generated ${new Date().toLocaleDateString("en-IN", { weekday:"long",year:"numeric",month:"long",day:"numeric" })}</div></div>
         <div style="text-align:right"><div style="font-size:20px;font-weight:700;color:#15803d">${result.diet.replace("_"," ")}</div><div style="font-size:11px;color:#6b7280">${Math.round(result.conf*100)}% model confidence</div></div>
       </div>
 
@@ -1063,7 +1083,7 @@ function ReportPage({ form, result }) {
       </table>
 
       <footer>
-        NutriAI Clinical Platform · Models: GBM (diet, ${(result.conf*100).toFixed(0)}% conf) · RF Regressor (risk, RMSE 3.9) · RF Classifier (meals) · Trained on 1,000 patient records<br/>
+        NutriPlanner Clinical Platform · Models: GBM (diet, ${(result.conf*100).toFixed(0)}% conf) · RF Regressor (risk, RMSE 3.9) · RF Classifier (meals) · Trained on 1,000 patient records<br/>
         ⚕️ This report is for informational purposes only. Always consult a licensed dietitian or physician before making dietary changes.
       </footer>
       </body></html>`);
@@ -1088,7 +1108,7 @@ function ReportPage({ form, result }) {
       <Card style={{ padding:"28px 32px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
           <div>
-            <div style={{ fontSize:18, fontWeight:600, color:C.t0 }}>NutriAI Clinical Report</div>
+            <div style={{ fontSize:18, fontWeight:600, color:C.t0 }}>NutriPlanner Clinical Report</div>
             <div style={{ fontSize:12, color:C.t2, marginTop:2 }}>{new Date().toLocaleDateString("en-IN",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</div>
           </div>
           <div style={{ textAlign:"right" }}>
@@ -1145,7 +1165,7 @@ function AIChatPage({ form, result }) {
   const endRef = useRef(null);
   const plan = DIET_PLANS[result.diet];
 
-  const system = `You are NutriAI, a clinical-grade AI nutrition assistant. You have access to the patient's complete health profile and ML-generated analysis.
+  const system = `You are NutriPlanner, a clinical-grade AI nutrition assistant. You have access to the patient's complete health profile and ML-generated analysis.
 
 PATIENT PROFILE:
 - Age: ${form.age} | Sex: ${form.gender} | BMI: ${result.bmi} kg/m²
@@ -1221,7 +1241,7 @@ RESPONSE STYLE:
       <Card style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
         <div style={{ padding:"12px 16px", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:8 }}>
           <div style={{ width:7, height:7, borderRadius:"50%", background: started && !loading ? C.green : C.t2, animation: loading ? "pulse 1.5s infinite" : "none" }} />
-          <span style={{ fontSize:13, fontWeight:500, color:C.t0 }}>NutriAI Clinical</span>
+          <span style={{ fontSize:13, fontWeight:500, color:C.t0 }}>NutriPlanner Clinical</span>
           <span style={{ fontSize:11, color:C.t2 }}>· Personalised to your health profile</span>
         </div>
 
@@ -1240,7 +1260,7 @@ RESPONSE STYLE:
           )}
           {msgs.map((m,i) => (
             <div key={i} style={{ display:"flex", flexDirection:"column", alignItems: m.role==="user" ? "flex-end" : "flex-start" }}>
-              {m.role==="assistant" && <div style={{ fontSize:10, color:C.t2, marginBottom:3, letterSpacing:".04em", textTransform:"uppercase" }}>NutriAI</div>}
+              {m.role==="assistant" && <div style={{ fontSize:10, color:C.t2, marginBottom:3, letterSpacing:".04em", textTransform:"uppercase" }}>NutriPlanner</div>}
               <div style={{ maxWidth:"85%", padding:"10px 13px", borderRadius: m.role==="user" ? "8px 8px 2px 8px" : "2px 8px 8px 8px",
                 background: m.role==="user" ? C.bg3 : `${plan.color}12`,
                 border: `1px solid ${m.role==="user" ? C.border : plan.color+"30"}`,
@@ -1285,9 +1305,11 @@ export default function App() {
   const [form, setForm] = useState(null);
   const [result, setResult] = useState(null);
   const [page, setPage] = useState("dashboard");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (f) => {
     setForm(f);
+    setSubmitting(true);
     try {
       const res = await fetch(`${BACKEND_URL}/predict`, {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -1301,9 +1323,10 @@ export default function App() {
       setResult(runMLInference(f));
       setView("app");
     }
+    setSubmitting(false);
   };
 
-  if (view === "onboarding") return (<OnboardingForm onSubmit={handleSubmit} />);
+  if (view === "onboarding") return (<OnboardingForm onSubmit={handleSubmit} submitting={submitting} />);
 
   return (
     <>
