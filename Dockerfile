@@ -24,5 +24,11 @@ ENV PORT=8000
 # Expose port (common for Render/Railway)
 EXPOSE 8000
 
+# Set pythonpath so Python explicitly recognizes the backend directory
+ENV PYTHONPATH=/app/backend
+
+# Change working directory so relative file lookups (like ML models) work correctly
+WORKDIR /app/backend
+
 # Run main.py using uvicorn when the container launches
-CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
