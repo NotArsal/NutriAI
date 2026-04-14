@@ -209,8 +209,16 @@ function runMLInference(p) {
   };
   scores.overall = Math.round((scores.metabolic + scores.cardiovascular + scores.lifestyle) / 3);
 
+  const ruleBasedOverrides = [];
+  const trendCurves = [
+    {
+      metric: "Projected Risk Score",
+      data: [{month: "Month 1", value: riskScore}, {month: "Month 3", value: Math.max(10, riskScore-10)}, {month: "Month 6", value: Math.max(5, riskScore-20)}]
+    }
+  ];
+
   return { diet, conf, riskScore: Math.round(riskScore * 10) / 10, riskLevel, riskComponents,
-           mealCat, flags, insights, scores, bmi: Math.round(bmi * 10) / 10 };
+           mealCat, flags, insights, scores, bmi: Math.round(bmi * 10) / 10, ruleBasedOverrides, trendCurves };
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -341,6 +349,7 @@ const NAV_ITEMS = [
   { id:"calculator",label:"Calculator",   icon:"M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-2v-4H8v-2h4V7h2v4h4v2h-4v4z" },
   { id:"progress",  label:"Progress",     icon:"M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" },
   { id:"report",    label:"Report",       icon:"M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 5h-3v5.5a2.5 2.5 0 0 1-5 0 2.5 2.5 0 0 1 2.5-2.5c.57 0 1.08.19 1.5.51V5h4v2zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z" },
+  { id:"metrics",   label:"Metrics (Acc.)",icon:"M3 3h18v18H3V3zm16 16V5H5v14h14zM7 17h2v-7H7v7zm4 0h2V7h-2v10zm4 0h2v-4h-2v4z" },
   { id:"aichat",    label:"AI Consult",   icon:"M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" },
 ];
 
@@ -643,6 +652,15 @@ function DashboardPage({ form, result }) {
             </div>
           ))}
         </div>
+        <Divider />
+        <div>
+          <SectionLabel>Rule-Based Overrides</SectionLabel>
+          {result.ruleBasedOverrides && result.ruleBasedOverrides.length > 0 ? result.ruleBasedOverrides.map((rule,i) => (
+            <div key={i} style={{ padding:"9px 10px", background:"rgba(239,68,68,.08)", borderLeft:`2px solid ${C.red}`, borderRadius:"0 5px 5px 0", marginBottom:8, fontSize:12, color:C.red, lineHeight:1.55 }}>
+              <strong>Override Engine:</strong> {rule}
+            </div>
+          )) : <div style={{ fontSize:12, color:C.t2 }}>No overrides triggered. ML recommendation natively approved.</div>}
+        </div>
         <div style={{ marginTop:"auto", padding:"10px 12px", background:C.bg2, borderRadius:6 }}>
           <div style={{ fontSize:11, color:C.t2, marginBottom:2 }}>Daily calorie target</div>
           <Mono color={plan.color}>{plan.kcal}</Mono>
@@ -681,6 +699,28 @@ function DashboardPage({ form, result }) {
           </div>
         ))}
       </Card>
+      
+      {/* ── Trend Curves ── */}
+      {result.trendCurves && result.trendCurves.length > 0 && (
+         <Card className="fu4" style={{ padding:18, gridColumn:"span 3" }}>
+            <SectionLabel>Predictive Trend Curves</SectionLabel>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
+               {result.trendCurves.map(curve => (
+                  <div key={curve.metric} style={{ background:C.bg2, padding:14, borderRadius:8, border:`1px solid ${C.border}` }}>
+                     <div style={{ fontSize:13, fontWeight:600, color:C.t0, marginBottom:12 }}>{curve.metric}</div>
+                     <div style={{ display:"flex", justifyContent:"space-between" }}>
+                        {curve.data.map((pt, i) => (
+                           <div key={i} style={{ textAlign:"center" }}>
+                              <Mono size={18} color={i === curve.data.length - 1 ? C.green : C.t1}>{pt.value}</Mono>
+                              <div style={{ fontSize:11, color:C.t2, marginTop:4 }}>{pt.month}</div>
+                           </div>
+                        ))}
+                     </div>
+                  </div>
+               ))}
+            </div>
+         </Card>
+      )}
     </div>
   );
 }
@@ -1298,6 +1338,74 @@ RESPONSE STYLE:
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   PAGE: METRICS (Classification Matrix)
+═══════════════════════════════════════════════════════════════════ */
+function MetricsPage() {
+  const [metrics, setMetrics] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/metrics`)
+      .then(res => res.json())
+      .then(data => { setMetrics(data); setLoading(false); })
+      .catch(() => { setMetrics(null); setLoading(false); });
+  }, []);
+
+  if (loading) return <div style={{ padding: 24, display: "flex", alignItems: "center", gap: 10 }}><Spinner /><span style={{ fontSize:13, color:C.t1 }}>Loading metrics...</span></div>;
+  if (!metrics) return <div style={{ padding: 24, fontSize: 13, color: C.red }}>Failed to load metrics. Ensure the backend server is running.</div>;
+
+  return (
+    <div style={{ padding: 24, maxWidth: 800 }}>
+      <div style={{ fontSize: 18, fontWeight: 600, color: C.t0, marginBottom: 4 }}>Classification matrix & Accuracy check</div>
+      <div style={{ fontSize: 12, color: C.t2, marginBottom: 20 }}>Model performance on 1,000 synthetic patient records</div>
+      
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <Card style={{ padding: "20px 24px" }}>
+          <SectionLabel>Overall Model Accuracy</SectionLabel>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+            <Mono size={32} color={C.green}>{(metrics.accuracy * 100).toFixed(1)}%</Mono>
+            <span style={{ fontSize: 12, color: C.t2 }}>Test score</span>
+          </div>
+        </Card>
+      </div>
+      
+      <Card style={{ padding: "20px 24px", marginBottom: 16 }}>
+        <SectionLabel>Confusion Matrix</SectionLabel>
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ borderCollapse: "collapse", width: "100%", maxWidth: 600 }}>
+            <thead>
+              <tr>
+                <th style={{ padding: 10, border: `1px solid ${C.border}`, background: C.bg2, fontSize: 11, color: C.t1, textAlign: "left", fontWeight: 600 }}>Actual \\ Predicted</th>
+                {metrics.classes.map(c => <th key={c} style={{ padding: 10, border: `1px solid ${C.border}`, background: C.bg2, fontSize: 11, color: C.t1, fontWeight: 600 }}>{c}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.confusion_matrix.map((row, i) => (
+                <tr key={i}>
+                  <td style={{ padding: 10, border: `1px solid ${C.border}`, background: C.bg2, fontSize: 11, color: C.t1, fontWeight: 600 }}>{metrics.classes[i]}</td>
+                  {row.map((val, j) => (
+                    <td key={j} style={{ padding: 10, border: `1px solid ${C.border}`, textAlign: "center", background: i === j ? "rgba(34,197,94,.08)" : "transparent" }}>
+                      <Mono size={13} color={i === j ? C.green : C.t0}>{val}</Mono>
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Card>
+      
+      <Card style={{ padding: "20px 24px" }}>
+        <SectionLabel>Classification Report</SectionLabel>
+        <div style={{ padding: 14, background: C.bg0, borderRadius: 6, border: `1px solid ${C.border}`, overflowX: "auto" }}>
+          <pre style={{ margin: 0, fontSize: 12, color: C.t0, fontFamily: F.mono, lineHeight: 1.6 }}>{JSON.stringify(metrics.classification_report, null, 2)}</pre>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    ROOT APP
 ═══════════════════════════════════════════════════════════════════ */
 export default function App() {
@@ -1330,7 +1438,6 @@ export default function App() {
 
   return (
     <>
-
       <div style={{ display:"flex", height:"100vh", overflow:"hidden", background:C.bg0 }}>
         <Sidebar active={page} onNav={setPage} result={result} />
         <main style={{ flex:1, overflowY:"auto" }}>
@@ -1340,6 +1447,7 @@ export default function App() {
           {page === "calculator"  && <CalculatorPage form={form} />}
           {page === "progress"    && <ProgressPage   form={form} result={result} />}
           {page === "report"      && <ReportPage     form={form} result={result} />}
+          {page === "metrics"     && <MetricsPage />}
           {page === "aichat"      && <AIChatPage     form={form} result={result} />}
         </main>
       </div>

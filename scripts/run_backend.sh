@@ -1,4 +1,4 @@
 #!/bin/bash
 # Start FastAPI backend
 cd "$(dirname "$0")/../backend"
-uvicorn main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000

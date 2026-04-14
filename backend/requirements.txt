@@ -1,9 +1,41 @@
-fastapi==0.111.0
-uvicorn[standard]==0.29.0
-pydantic==2.7.1
-scikit-learn==1.2.2
-xgboost==2.0.3
-numpy==1.26.4
-joblib==1.4.0
-pandas==2.2.2
-python-multipart==0.0.9
+# NutriPlanner API — Python Dependencies (v3)
+# Install: pip install -r requirements.txt
+
+# ── FastAPI core ───────────────────────────────────────────────────────────────
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.7.1
+pydantic-settings>=2.3.4
+python-multipart>=0.0.9
+
+# ── ML stack ──────────────────────────────────────────────────────────────────
+scikit-learn>=1.4.1.post1
+xgboost>=2.0.3
+numpy>=1.26.4
+pandas>=2.2.2
+joblib>=1.4.0
+
+# ── SHAP explainability ────────────────────────────────────────────────────────
+shap>=0.45.1
+
+# ── Observability ─────────────────────────────────────────────────────────────
+structlog>=24.2.0
+
+# ── Rate limiting ──────────────────────────────────────────────────────────────
+slowapi>=0.1.9
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=8.2.2
+pytest-asyncio>=0.23.7
+httpx>=0.27.0
+
+# ── Database & Cache ─────────────────────────────────────────────────────────
+sqlalchemy[asyncio]>=2.0.30
+asyncpg>=0.29.0
+greenlet>=3.0.3
+redis>=5.0.4
+
+# ── Authentication ─────────────────────────────────────────────────────────────
+passlib[bcrypt]>=1.7.4
+bcrypt==3.2.2
+PyJWT>=2.8.0

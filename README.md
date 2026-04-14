@@ -11,8 +11,13 @@ nutriai/
 │   ├── feature_cols.pkl    ← Feature column order
 │   └── model_meta.json     ← Encoder maps + accuracy stats
 ├── backend/
-│   ├── main.py             ← FastAPI application
+│   ├── app/                ← Modular FastAPI application
+│   │   ├── main.py         ← Startup and Lifespan engine
+│   │   ├── routers/        ← API endpoints (predict, meals, chat)
+│   │   └── services/       ← ML and logic services
 │   └── requirements.txt
+├── scripts/
+│   └── run_backend.sh      ← Startup script
 └── frontend/
     └── src/
         └── FullStack.jsx     ← React frontend (full-stack)
@@ -23,7 +28,8 @@ nutriai/
 ```bash
 cd backend
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8000
+# Alternatively, use scripts/run_backend.sh on Linux/Mac
 ```
 
 API docs at: http://localhost:8000/docs
@@ -32,12 +38,13 @@ API docs at: http://localhost:8000/docs
 
 | Method | Route | Description |
 |--------|-------|-------------|
-| POST | `/predict` | Full prediction (diet + risk + meals) |
+| POST | `/predict` | Full prediction (AI + Rule-Based + Trend Curves) |
 | POST | `/predict/diet` | Diet recommendation only |
 | POST | `/predict/risk` | Health risk score only |
 | POST | `/meals` | Meal recommendations only |
+| POST | `/chat` | AI-powered nutrition consultation |
 | GET | `/health` | Service health check |
-| GET | `/models/info` | Model accuracy stats |
+| GET | `/metrics` | Confusion matrix and model accuracy evaluation |
 
 ### Example request
 
