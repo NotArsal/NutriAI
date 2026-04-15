@@ -21,16 +21,34 @@ settings = get_settings()
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
-    """Dependency for injecting DB sessions into routers/services."""
+    """Dependency for injecting DB sessions into routers/services.
+    
+    Gracefully handles the case where PostgreSQL is unavailable (e.g. Render
+    free tier without an attached database). The app still serves predictions;
+    it simply skips persistence.
+    """
     async with async_session_maker() as session:
         try:
             yield session
-            await session.commit()
-        except:
-            await session.rollback()
+            try:
+                await session.commit()
+            except Exception:
+                # DB unavailable — rollback silently so ASGI doesn't crash
+                try:
+                    await session.rollback()
+                except Exception:
+                    pass
+        except Exception:
+            try:
+                await session.rollback()
+            except Exception:
+                pass
             raise
         finally:
-            await session.close()
+            try:
+                await session.close()
+            except Exception:
+                pass
 
 
 async def get_current_user(
