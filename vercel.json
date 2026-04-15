@@ -1,14 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
   "rewrites": [
     {
       "source": "/(.*)",
@@ -16,6 +7,5 @@
     }
   ],
   "outputDirectory": "frontend/dist",
-  "buildCommand": "cd frontend && npm install && npm run build",
-  "framework": null
+  "buildCommand": "cd frontend && npm install && npm run build"
 }

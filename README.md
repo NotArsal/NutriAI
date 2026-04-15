@@ -45,7 +45,6 @@ API docs at: http://localhost:8000/docs
 | POST | `/chat` | AI-powered nutrition consultation |
 | GET | `/health` | Service health check |
 | GET | `/metrics` | Confusion matrix and model accuracy evaluation |
-
 ### Example request
 
 ```bash
