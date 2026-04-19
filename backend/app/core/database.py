@@ -9,8 +9,10 @@ from sqlalchemy.orm import declarative_base
 
 from app.config import get_settings
 
+from app.core.logging import get_logger
+
 settings = get_settings()
-log = get_logger(__name__) if "get_logger" in globals() else structlog.get_logger("database")
+log = get_logger("database")
 
 engine = create_async_engine(
     settings.database_url,

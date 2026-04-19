@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import Dict, List, Tuple
 
+import numpy as np
+
 # ── Meal database ──────────────────────────────────────────────────────────────
 # Key: (meal_category, cuisine) → list of meal dicts
 MEALS_DB: Dict[Tuple[str, str], List[dict]] = {

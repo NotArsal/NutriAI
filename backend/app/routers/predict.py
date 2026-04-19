@@ -9,13 +9,10 @@ Endpoints:
 from __future__ import annotations
 
 import hashlib
-import json
-import numpy as np
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user_optional, get_db
-from app.core.database import get_db_session
 from app.core.logging import get_logger
 from app.core.meals_db import compute_risk_breakdown, get_meals
 from app.core.redis_client import redis_client
@@ -30,7 +27,6 @@ from app.schemas.responses import (
     RiskResponse,
     SHAPExplanation,
     SHAPFeature,
-    MetricsResponse,
     TrendCurve,
     Point,
 )
@@ -295,35 +291,3 @@ async def predict_risk_only(patient: PatientInput) -> RiskResponse:
         flags=flags,
         riskCI=ConfidenceInterval(lower=ci_lower, upper=ci_upper),
     )
-
-# ── Metrics / Accuracy / Classification Matrix ─────────────────────────────────
-
-@router.get("/metrics", response_model=MetricsResponse, summary="Classification matrix and model accuracy evaluation")
-async def get_model_metrics() -> MetricsResponse:
-    """
-    Returns the classification matrix and test accuracy metrics for the predictive models.
-    """
-    # Using the exact accuracy reported from the Jupyter notebooks / training metadata
-    diet_classes = ["Balanced", "Low_Carb", "Low_Sodium"]
-    
-    # Mock realistic confusion matrix based on N=1000 items
-    confusion_matrix = [
-        [320, 10,   5],   # Balanced (335 actual)
-        [8,   310,  12],  # Low_Carb (330 actual)
-        [2,   8,    325]  # Low_Sodium (335 actual)
-    ]
-    
-    classification_report = {
-        "Balanced":   {"precision": 0.97, "recall": 0.95, "f1-score": 0.96, "support": 335},
-        "Low_Carb":   {"precision": 0.94, "recall": 0.94, "f1-score": 0.94, "support": 330},
-        "Low_Sodium": {"precision": 0.95, "recall": 0.97, "f1-score": 0.96, "support": 335},
-        "accuracy":   {"precision": 0.955, "recall": 0.955, "f1-score": 0.955, "support": 1000}
-    }
-    
-    return MetricsResponse(
-        accuracy=0.955,
-        confusion_matrix=confusion_matrix,
-        classes=diet_classes,
-        classification_report=classification_report
-    )
-
