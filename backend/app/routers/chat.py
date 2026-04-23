@@ -23,7 +23,7 @@ async def chat(request_body: ChatRequest, request: Request) -> ChatResponse:
     """
     try:
         messages = [m.model_dump() for m in request_body.messages]
-        text = generate_clinical_response(request_body.patient_data, messages)
+        text = await generate_clinical_response(request_body.patient_data, messages)
         log.info("chat_response_generated", n_turns=len(messages))
         return ChatResponse(content=[{"text": text}])
     except Exception as exc:

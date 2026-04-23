@@ -296,11 +296,24 @@ class MLService:
         disease = p.disease_type
         valid_diseases = [disease, "None"] if disease != "None" else ["None"]
         
-        # We need the indices of valid meals
         mask = self.meal_database['Disease'].isin(valid_diseases)
+        
+        # Track 1: Boolean Safety Masking (Mathematical Exclusion before KNN)
+        if p.glucose > 140:
+            mask = mask & (self.meal_database['Carbohydrates'] < 50)
+            
+        if p.blood_pressure > 140:
+            mask = mask & (self.meal_database['Sodium'] < 1500)
+            
+        if p.cholesterol > 200:
+            mask = mask & (self.meal_database['Fat'] < 20)
+        
+        # We need the indices of valid meals
         if not mask.any():
-            # Fallback if no specific meals found (safety first, return 'None' diseases)
-            mask = self.meal_database['Disease'] == "None"
+            # Fallback if boolean constraints are too strict and eliminate all meals
+            mask = self.meal_database['Disease'].isin(valid_diseases)
+            if not mask.any():
+                mask = self.meal_database['Disease'] == "None"
             
         valid_indices = self.meal_database[mask].index.tolist()
         
