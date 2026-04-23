@@ -144,15 +144,20 @@ alembic upgrade head
 | `ALLOWED_ORIGINS` | Comma-separated list of allowed frontend origins |
 | `ENVIRONMENT` | `production` |
 
-### Frontend → Vercel
+### ▲ Vercel (Frontend)
 
-1. Import GitHub repo in Vercel
-2. Framework preset: **Vite**
-3. Build command: `cd frontend && npm install && npm run build`
-4. Output directory: `frontend/dist`
-5. Add environment variable: `VITE_API_URL` = your Render backend URL
+1. Go to **vercel.com → Add New Project** → import the GitHub repo.
+2. In **Configure Project**, set:
+   - **Root Directory**: `frontend`  <-- **CRITICAL STEP**
+   - **Framework Preset**: Vite
+3. Add **Environment Variable**: `VITE_API_URL` = your Render service URL (e.g. `https://nutriplanner-api.onrender.com`).
+4. Click **Deploy**.
 
-## API Endpoints
+> **Note:** If you get a 404 error after deployment, ensure the **Root Directory** is set to `frontend` in the project settings.
+
+## 🛠️ Troubleshooting & Fixes
+
+See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for a detailed list of common deployment errors (CORS, Database Connections, Vercel 404s) and how we solved them.
 
 ### Public (no auth required)
 
