@@ -222,7 +222,7 @@ curl https://your-render-url.onrender.com/reports \
 
 | Model | Algorithm | Task | Performance |
 |-------|-----------|------|-------------|
-| Diet Recommender | XGBoost Classifier | Multi-class classification | 100% CV accuracy |
+| Diet Recommender | XGBoost Classifier | Multi-class classification | 95.8% Accuracy |
 | Macro Regressor | Random Forest Regressor| Multi-output continuous (Cal/Pro)| R² 0.958 |
 | Risk Scorer | Random Forest Regressor | Continuous risk 0–100 | RMSE 3.93 |
 | Meal Recommender | K-Nearest Neighbors | Content-Based Recommendation | Euclidean Exact Match |

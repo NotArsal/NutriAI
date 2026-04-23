@@ -264,6 +264,18 @@ class MLService:
         dist = {self.diet_classes[i]: round(float(p), 4) for i, p in enumerate(proba)}
         return name, conf, dist
 
+    def predict_meal_category(self, X: np.ndarray) -> str:
+        """Returns the high-level meal category based on the diet prediction."""
+        diet_name, _, _ = self.predict_diet(X)
+        mapping = {
+            "Diabetes": "High-Protein",
+            "Hypertension": "Heart-Healthy",
+            "Obesity": "High-Protein",
+            "Low_Carb": "High-Protein",
+            "Low_Sodium": "Heart-Healthy"
+        }
+        return mapping.get(diet_name, "Balanced-Macro")
+
     def predict_risk(self, p) -> float:
         # Use legacy features for risk model
         X = self.build_legacy_features(p)

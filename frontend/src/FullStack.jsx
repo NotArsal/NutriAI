@@ -240,16 +240,11 @@ function runMLInference(p) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   DATA
+   DATA (Consolidated)
 ═══════════════════════════════════════════════════════════════════ */
 
-const DIET_PLANS = {
-  Low_Carb:   { label:"Low-Carb", color:C.green,  kcal:"1,600–2,000", macros:[{n:"Protein",p:35,c:C.green},{n:"Fat",p:45,c:C.teal},{n:"Carbs",p:20,c:C.t2}], include:["Leafy greens","Eggs","Fatty fish","Avocado","Nuts & seeds","Berries (limited)","Olive oil","Cauliflower"], exclude:["White bread","Rice & pasta","Sugary drinks","Fruit juice","Chips","High-GI fruit"] },
-  Low_Sodium: { label:"Low-Sodium", color:C.teal, kcal:"1,800–2,200", macros:[{n:"Protein",p:25,c:C.teal},{n:"Fat",p:30,c:C.blue},{n:"Carbs",p:45,c:C.t2}], include:["Fresh fruit","Whole grains","Lean poultry","Legumes","Low-Na dairy","Herbs","Oily fish","Potassium-rich foods"], exclude:["Table salt","Canned soup","Processed meats","Pickles","Fast food","Soy sauce"] },
-  Balanced:   { label:"Balanced",  color:C.blue,  kcal:"1,800–2,400", macros:[{n:"Protein",p:25,c:C.blue},{n:"Fat",p:30,c:C.amber},{n:"Carbs",p:45,c:C.t2}], include:["Whole grains","Colourful veg","Lean proteins","Healthy fats","Low-fat dairy","Fresh fruit","Legumes","Eggs"], exclude:["Ultra-processed","Trans fats","Excessive sugar","Alcohol","Refined grains"] },
-};
-
 /* Legacy MEALS_DB removed in favor of Backend KNN Recommender */
+
 
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -854,6 +849,25 @@ const ALLERGEN_KEYWORDS = {
   "Gluten,Dairy": ["roti","chapati","naan","bread","pasta","bun","tortilla","burrito","quesadilla","wrap","dumpling","paneer","curd","yogurt"],
 };
 
+const DIET_PLANS = {
+  Low_Carb:   { label:"Low-Carb", color:C.green,  kcal:"1,600–2,000", macros:[{n:"Protein",p:35,c:C.green},{n:"Fat",p:45,c:C.teal},{n:"Carbs",p:20,c:C.t2}], include:["Leafy greens","Eggs","Fatty fish","Avocado","Nuts & seeds","Berries (limited)","Olive oil","Cauliflower"], exclude:["White bread","Rice & pasta","Sugary drinks","Fruit juice","Chips","High-GI fruit"] },
+  Low_Sodium: { label:"Low-Sodium", color:C.teal, kcal:"1,800–2,200", macros:[{n:"Protein",p:25,c:C.teal},{n:"Fat",p:30,c:C.blue},{n:"Carbs",p:45,c:C.t2}], include:["Fresh fruit","Whole grains","Lean poultry","Legumes","Low-Na dairy","Herbs","Oily fish","Potassium-rich foods"], exclude:["Table salt","Canned soup","Processed meats","Pickles","Fast food","Soy sauce"] },
+  Balanced:   { label:"Balanced",  color:C.blue,  kcal:"1,800–2,400", macros:[{n:"Protein",p:25,c:C.blue},{n:"Fat",p:30,c:C.amber},{n:"Carbs",p:45,c:C.t2}], include:["Whole grains","Colourful veg","Lean proteins","Healthy fats","Low-fat dairy","Fresh fruit","Legumes","Eggs"], exclude:["Ultra-processed","Trans fats","Excessive sugar","Alcohol","Refined grains"] },
+};
+
+const FOOD_DB = [
+  { name: "Paneer tikka bowl", kcal: 420, p: 32, f: 24, c: 18, cat: "High-Protein" },
+  { name: "Egg bhurji with roti", kcal: 380, p: 28, f: 18, c: 22, cat: "High-Protein" },
+  { name: "Chicken tikka masala", kcal: 490, p: 38, f: 28, c: 12, cat: "High-Protein" },
+  { name: "Vegetable khichdi", kcal: 340, p: 14, f: 8, c: 55, cat: "Heart-Healthy" },
+  { name: "Oats upma", kcal: 290, p: 10, f: 6, c: 48, cat: "Heart-Healthy" },
+  { name: "Rajma with brown rice", kcal: 420, p: 18, f: 7, c: 62, cat: "Heart-Healthy" },
+  { name: "Mixed dal with chapati", kcal: 390, p: 16, f: 9, c: 58, cat: "Balanced-Macro" },
+  { name: "Curd rice with pickle", kcal: 320, p: 10, f: 7, c: 52, cat: "Balanced-Macro" },
+  { name: "Grilled chicken fajitas", kcal: 430, p: 38, f: 20, c: 20, cat: "High-Protein" },
+  { name: "Minestrone soup", kcal: 220, p: 9, f: 4, c: 38, cat: "Heart-Healthy" },
+];
+
 function filterMealsByAllergen(meals, allergies) {
   if (!allergies || allergies === "None") return meals;
   const keywords = ALLERGEN_KEYWORDS[allergies] || [allergies.toLowerCase()];
@@ -925,11 +939,32 @@ function FoodSearchPage() {
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("All");
   const [log, setLog] = useState([]);
-  const cats = ["All",...[...new Set(FOOD_DB.map(f => f.cat))]];
-  const filtered = FOOD_DB.filter(f =>
-    (cat === "All" || f.cat === cat) &&
-    f.name.toLowerCase().includes(query.toLowerCase())
-  );
+  const [results, setResults] = useState(FOOD_DB);
+  const [loading, setLoading] = useState(false);
+
+  const cats = ["All", ...new Set(FOOD_DB.map(f => f.cat))];
+
+  // Integrated Search Handler
+  const handleSearch = useCallback(async (q) => {
+    setQuery(q);
+    if (q.length < 2) {
+      setResults(FOOD_DB.filter(f => cat === "All" || f.cat === cat));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiFetch(`/meals/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setResults(data.length > 0 ? data : []);
+    } catch (e) {
+      // Fallback to local filtering if backend search fails
+      setResults(FOOD_DB.filter(f => f.name.toLowerCase().includes(q.toLowerCase())));
+    }
+    setLoading(false);
+  }, [cat]);
+
+  const filtered = results.filter(f => cat === "All" || f.cat === cat);
   const totals = log.reduce((acc,f) => ({ kcal:acc.kcal+f.kcal, p:acc.p+f.p, fat:acc.fat+f.f, c:acc.c+f.c }), { kcal:0, p:0, fat:0, c:0 });
 
   return (
@@ -943,8 +978,9 @@ function FoodSearchPage() {
             <svg style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)" }} width={14} height={14} viewBox="0 0 24 24" fill={C.t2}>
               <path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7 14 5 12 5 9.5S7 5 9.5 5 14 7 14 9.5 12 14 9.5 14z" />
             </svg>
-            <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search foods…"
+            <input value={query} onChange={e => handleSearch(e.target.value)} placeholder="Search foods…"
               style={{ width:"100%", padding:"9px 10px 9px 32px", background:C.bg2, border:`1px solid ${C.border}`, borderRadius:6, color:C.t0, fontSize:13, outline:"none" }} />
+            {loading && <div style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)" }}><Spinner /></div>}
           </div>
           <select value={cat} onChange={e => setCat(e.target.value)}
             style={{ padding:"9px 10px", background:C.bg2, border:`1px solid ${C.border}`, borderRadius:6, color:C.t0, fontSize:13, outline:"none" }}>
