@@ -248,113 +248,8 @@ const DIET_PLANS = {
   Balanced:   { label:"Balanced",  color:C.blue,  kcal:"1,800–2,400", macros:[{n:"Protein",p:25,c:C.blue},{n:"Fat",p:30,c:C.amber},{n:"Carbs",p:45,c:C.t2}], include:["Whole grains","Colourful veg","Lean proteins","Healthy fats","Low-fat dairy","Fresh fruit","Legumes","Eggs"], exclude:["Ultra-processed","Trans fats","Excessive sugar","Alcohol","Refined grains"] },
 };
 
-const MEALS_DB = {
-  "High-Protein": {
-    Indian: [
-      { name:"Paneer tikka bowl", kcal:420, p:32, f:24, c:18, time:"Lunch" },
-      { name:"Egg bhurji + multigrain roti", kcal:380, p:28, f:18, c:22, time:"Breakfast" },
-      { name:"Chicken tikka masala (no rice)", kcal:490, p:38, f:28, c:12, time:"Dinner" },
-      { name:"Dal tadka (protein-forward)", kcal:310, p:18, f:14, c:20, time:"Dinner" },
-    ],
-    Chinese: [
-      { name:"Steamed fish with ginger", kcal:380, p:35, f:18, c:10, time:"Dinner" },
-      { name:"Egg drop soup + tofu", kcal:220, p:18, f:10, c:8, time:"Lunch" },
-      { name:"Stir-fried chicken & broccoli", kcal:360, p:34, f:16, c:12, time:"Dinner" },
-      { name:"Steamed prawn dumplings", kcal:320, p:24, f:12, c:20, time:"Lunch" },
-    ],
-    Italian: [
-      { name:"Grilled chicken paillard", kcal:390, p:42, f:20, c:6, time:"Dinner" },
-      { name:"Frittata (egg & spinach)", kcal:340, p:26, f:22, c:8, time:"Breakfast" },
-      { name:"Tuna carpaccio", kcal:280, p:30, f:14, c:4, time:"Lunch" },
-      { name:"Grilled sea bass + capers", kcal:360, p:36, f:18, c:4, time:"Dinner" },
-    ],
-    Mexican: [
-      { name:"Grilled chicken fajitas (lettuce wrap)", kcal:380, p:38, f:18, c:16, time:"Dinner" },
-      { name:"Huevos rancheros (low-carb)", kcal:360, p:24, f:22, c:16, time:"Breakfast" },
-      { name:"Carne asada bowl", kcal:420, p:36, f:20, c:20, time:"Lunch" },
-      { name:"Tuna tostadas", kcal:340, p:28, f:16, c:22, time:"Lunch" },
-    ],
-  },
-  "Heart-Healthy": {
-    Indian: [
-      { name:"Vegetable khichdi", kcal:340, p:14, f:8, c:55, time:"Lunch" },
-      { name:"Oats upma", kcal:290, p:10, f:6, c:48, time:"Breakfast" },
-      { name:"Rajma (low Na) + brown rice", kcal:420, p:18, f:7, c:62, time:"Dinner" },
-      { name:"Palak dal", kcal:300, p:14, f:8, c:38, time:"Dinner" },
-    ],
-    Chinese: [
-      { name:"Congee with ginger", kcal:240, p:8, f:3, c:42, time:"Breakfast" },
-      { name:"Steamed salmon fried rice", kcal:420, p:28, f:10, c:48, time:"Dinner" },
-      { name:"Hot & sour soup (low Na)", kcal:160, p:8, f:4, c:18, time:"Starter" },
-      { name:"Buddha's delight (vegetable stew)", kcal:280, p:10, f:8, c:38, time:"Dinner" },
-    ],
-    Italian: [
-      { name:"Minestrone soup", kcal:220, p:9, f:4, c:38, time:"Lunch" },
-      { name:"Grilled sea bass", kcal:380, p:32, f:20, c:10, time:"Dinner" },
-      { name:"Caprese salad (low Na)", kcal:180, p:10, f:12, c:8, time:"Starter" },
-      { name:"Pasta e fagioli (low Na)", kcal:340, p:14, f:6, c:54, time:"Dinner" },
-    ],
-    Mexican: [
-      { name:"Chicken tortilla soup (low Na)", kcal:280, p:20, f:8, c:28, time:"Lunch" },
-      { name:"Baked tilapia tacos", kcal:350, p:28, f:10, c:32, time:"Dinner" },
-      { name:"Veggie burrito bowl (no salt)", kcal:380, p:14, f:8, c:58, time:"Dinner" },
-      { name:"Guacamole + jicama sticks", kcal:190, p:3, f:14, c:14, time:"Snack" },
-    ],
-  },
-  "Balanced-Macro": {
-    Indian: [
-      { name:"Mixed dal + chapati", kcal:390, p:16, f:9, c:58, time:"Lunch" },
-      { name:"Poha with peanuts", kcal:280, p:8, f:8, c:44, time:"Breakfast" },
-      { name:"Vegetable biryani", kcal:460, p:12, f:12, c:70, time:"Dinner" },
-      { name:"Curd rice", kcal:320, p:10, f:7, c:52, time:"Dinner" },
-    ],
-    Chinese: [
-      { name:"Wonton noodle soup", kcal:360, p:18, f:9, c:48, time:"Lunch" },
-      { name:"Mapo tofu + rice", kcal:380, p:16, f:18, c:34, time:"Dinner" },
-      { name:"Steamed bun (bao)", kcal:200, p:8, f:4, c:32, time:"Snack" },
-      { name:"Dan dan noodles (light)", kcal:420, p:18, f:14, c:52, time:"Dinner" },
-    ],
-    Italian: [
-      { name:"Wholewheat pasta primavera", kcal:420, p:16, f:9, c:68, time:"Dinner" },
-      { name:"Mushroom risotto", kcal:380, p:12, f:10, c:62, time:"Dinner" },
-      { name:"Panzanella salad", kcal:280, p:8, f:10, c:40, time:"Lunch" },
-      { name:"Bruschetta + caprese", kcal:300, p:12, f:12, c:36, time:"Lunch" },
-    ],
-    Mexican: [
-      { name:"Brown rice burrito bowl", kcal:460, p:20, f:12, c:62, time:"Lunch" },
-      { name:"Wholewheat quesadilla", kcal:380, p:18, f:14, c:44, time:"Dinner" },
-      { name:"Chicken tinga tacos (3)", kcal:420, p:28, f:14, c:40, time:"Dinner" },
-      { name:"Pozole (light)", kcal:310, p:20, f:6, c:36, time:"Dinner" },
-    ],
-  },
-};
+/* Legacy MEALS_DB removed in favor of Backend KNN Recommender */
 
-const FOOD_DB = [
-  { name:"Brown rice (cooked)", kcal:216, p:5, f:2, c:45, cat:"Grain" },
-  { name:"White rice (cooked)", kcal:242, p:4, f:0, c:53, cat:"Grain" },
-  { name:"Oats (dry 50g)", kcal:189, p:6, f:3, c:34, cat:"Grain" },
-  { name:"Whole wheat bread (1 slice)", kcal:81, p:4, f:1, c:15, cat:"Grain" },
-  { name:"Quinoa (cooked 1 cup)", kcal:222, p:8, f:4, c:39, cat:"Grain" },
-  { name:"Chicken breast (100g grilled)", kcal:165, p:31, f:4, c:0, cat:"Protein" },
-  { name:"Salmon (100g baked)", kcal:208, p:28, f:11, c:0, cat:"Protein" },
-  { name:"Egg (1 large)", kcal:78, p:6, f:5, c:1, cat:"Protein" },
-  { name:"Paneer (100g)", kcal:265, p:18, f:21, c:2, cat:"Protein" },
-  { name:"Tofu (100g firm)", kcal:76, p:8, f:5, c:2, cat:"Protein" },
-  { name:"Tuna (canned, 100g)", kcal:116, p:26, f:1, c:0, cat:"Protein" },
-  { name:"Lentils (cooked 1 cup)", kcal:230, p:18, f:1, c:40, cat:"Legume" },
-  { name:"Black beans (cooked 1 cup)", kcal:227, p:15, f:1, c:41, cat:"Legume" },
-  { name:"Chickpeas (cooked 1 cup)", kcal:269, p:15, f:4, c:45, cat:"Legume" },
-  { name:"Spinach (raw 100g)", kcal:23, p:3, f:0, c:4, cat:"Vegetable" },
-  { name:"Broccoli (steamed 100g)", kcal:35, p:4, f:0, c:7, cat:"Vegetable" },
-  { name:"Sweet potato (medium)", kcal:103, p:2, f:0, c:24, cat:"Vegetable" },
-  { name:"Avocado (half)", kcal:160, p:2, f:15, c:9, cat:"Fat" },
-  { name:"Almonds (30g)", kcal:173, p:6, f:15, c:6, cat:"Fat" },
-  { name:"Olive oil (1 tbsp)", kcal:119, p:0, f:14, c:0, cat:"Fat" },
-  { name:"Greek yogurt (100g)", kcal:97, p:10, f:5, c:4, cat:"Dairy" },
-  { name:"Banana (medium)", kcal:105, p:1, f:0, c:27, cat:"Fruit" },
-  { name:"Apple (medium)", kcal:95, p:0, f:0, c:25, cat:"Fruit" },
-  { name:"Blueberries (100g)", kcal:57, p:1, f:0, c:14, cat:"Fruit" },
-];
 
 /* ═══════════════════════════════════════════════════════════════════
    SIDEBAR NAV
@@ -1579,7 +1474,7 @@ function MetricsPage() {
   return (
     <div style={{ padding: 24, maxWidth: 800 }}>
       <div style={{ fontSize: 18, fontWeight: 600, color: C.t0, marginBottom: 4 }}>Classification matrix & Accuracy check</div>
-      <div style={{ fontSize: 12, color: C.t2, marginBottom: 20 }}>Model performance on 1,000 synthetic patient records</div>
+      <div style={{ fontSize: 12, color: C.t2, marginBottom: 20 }}>Model performance on 3,000+ clinical and nutrition records</div>
       
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Card style={{ padding: "20px 24px" }}>
@@ -1588,6 +1483,11 @@ function MetricsPage() {
             <Mono size={32} color={C.green}>{(metrics.accuracy * 100).toFixed(1)}%</Mono>
             <span style={{ fontSize: 12, color: C.t2 }}>Test score</span>
           </div>
+        </Card>
+        <Card style={{ padding: "20px 24px" }}>
+          <SectionLabel>Architecture Insight</SectionLabel>
+          <div style={{ fontSize: 13, color: C.t1, fontWeight: 500 }}>Stage-3 Intelligence</div>
+          <div style={{ fontSize: 11, color: C.t2, marginTop: 4 }}>XGBoost + Random Forest + KNN Retrieval</div>
         </Card>
       </div>
       
