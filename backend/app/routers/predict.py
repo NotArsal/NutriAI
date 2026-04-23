@@ -205,7 +205,7 @@ async def predict(
     scores = _build_health_scores(components, patient)
 
     # SHAP
-    shap_raw  = ml_service.explain_risk(X)
+    shap_raw  = ml_service.explain_diet(X)
     shap_resp = _parse_shap(shap_raw)
 
     log.info(

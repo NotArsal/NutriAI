@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend } from "recharts";
 import "./index.css";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -1580,6 +1581,36 @@ function HistoryPage() {
           {data?.total ?? 0} total reports · showing {PAGE_SIZE} per page
         </div>
       </div>
+
+      {/* Visual Trends Dashboard */}
+      {data?.predictions?.length > 1 && (
+        <Card style={{ padding: "20px 24px", marginBottom: 24 }}>
+          <SectionLabel sub="Longitudinal tracking of Risk Score and Caloric Targets">Longitudinal Trends</SectionLabel>
+          <div style={{ width: "100%", height: 300, marginTop: 16 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={[...data.predictions].reverse()} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
+                <XAxis 
+                  dataKey="created_at" 
+                  tickFormatter={(val) => new Date(val).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  tick={{ fontSize: 11, fill: C.t2 }} 
+                  axisLine={false} 
+                  tickLine={false} 
+                />
+                <YAxis yAxisId="left" tick={{ fontSize: 11, fill: C.t2 }} axisLine={false} tickLine={false} domain={[0, 100]} />
+                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: C.t2 }} axisLine={false} tickLine={false} />
+                <RechartsTooltip 
+                  labelFormatter={(val) => new Date(val).toLocaleDateString("en-US")}
+                  contentStyle={{ background: C.bg1, border: `1px solid ${C.border}`, borderRadius: 8, fontSize: 12 }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Line yAxisId="left" type="monotone" name="Health Risk Score" dataKey="risk_score" stroke={C.red} strokeWidth={2} activeDot={{ r: 6 }} />
+                <Line yAxisId="right" type="monotone" name="Caloric Intake" dataKey="patient_inputs.daily_caloric" stroke={C.blue} strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
 
       {!data?.predictions?.length ? (
         <Card style={{ padding: "40px 24px", textAlign: "center" }}>

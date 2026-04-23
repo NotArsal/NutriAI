@@ -180,6 +180,7 @@ class HealthResponse(BaseModel):
     models:     Dict[str, ModelInfo]
     model_card: ModelCard
     uptime_s:   Optional[float] = None
+    checksums:  Optional[Dict[str, str]] = None
 
 
 # Update forward ref for ChatRequest

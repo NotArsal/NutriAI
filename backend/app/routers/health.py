@@ -45,6 +45,7 @@ async def root():
 )
 async def health() -> HealthResponse:
     raw_models = ml_service.get_model_info()
+    checksums = raw_models.pop("checksums", None)
     all_loaded  = all(v["loaded"] for v in raw_models.values())
 
     return HealthResponse(
@@ -56,6 +57,7 @@ async def health() -> HealthResponse:
             name: ModelInfo(**info) for name, info in raw_models.items()
         },
         model_card=ModelCard(**MODEL_CARD_DATA),
+        checksums=checksums,
     )
 
 

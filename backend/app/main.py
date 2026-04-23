@@ -44,17 +44,9 @@ async def lifespan(app: FastAPI):
     ml_service.load()
     log.info("ml_models_loaded", models_loaded=ml_service._loaded)
     
-    # Init DB schema (dev convenience; use Alembic for production migrations)
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        log.info("database_tables_created")
-    except Exception as e:
-        log.warning(
-            "database_unavailable",
-            error=str(e),
-            hint="Auth and history endpoints will return HTTP 503 until a database is attached.",
-        )
+    # Database migrations are now handled by Alembic.
+    # To run migrations: `alembic upgrade head`
+    log.info("database_migrations_delegated_to_alembic")
     
     # Init Redis
     try:

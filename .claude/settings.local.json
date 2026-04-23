@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile app/main.py app/routers/auth.py app/routers/predict.py app/routers/reports.py app/api/deps.py app/repositories/prediction_repo.py)",
+      "Bash(python -c \"from app.routers import auth, predict, meals, chat, health, reports; print\\('All routers import OK'\\)\")"
+    ]
+  }
+}

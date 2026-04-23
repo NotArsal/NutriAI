@@ -125,7 +125,20 @@ class MLService:
             self.meal_weight_penalty = self.meal_meta.get("weight_penalty", 1000)
 
             self._loaded = True
-            log.info("models_loaded", model_dir=str(model_dir))
+            
+            # Compute Checksums
+            import hashlib
+            self.checksums = {}
+            for name, path in [
+                ("diet_classifier", model_dir / "new_diet_classifier.pkl"),
+                ("macro_regressor", model_dir / "new_macro_regressor.pkl"),
+                ("meal_knn", model_dir / "new_meal_knn.pkl")
+            ]:
+                if path.exists():
+                    with open(path, "rb") as f:
+                        self.checksums[name] = hashlib.sha256(f.read()).hexdigest()
+            
+            log.info("models_loaded", model_dir=str(model_dir), checksums=self.checksums)
         except Exception as exc:
             log.warning("model_load_failed", error=str(exc))
 
@@ -139,12 +152,55 @@ class MLService:
             # SHAP TreeExplainer might fail for multiclass XGBoost depending on version
             try:
                 self._diet_explainer = shap.TreeExplainer(self.diet_model)
-            except:
+            except Exception:
                 pass
             self._risk_explainer = shap.TreeExplainer(self.risk_model)
             self._shap_available = True
         except Exception as exc:
             log.warning("shap_init_failed", error=str(exc))
+            
+    def explain_diet(self, X: np.ndarray, top_n: int = 5) -> Optional[Dict]:
+        if not self._shap_available or not self._diet_explainer:
+            return None
+        try:
+            shap_values = self._diet_explainer.shap_values(X)
+            # For multi-class XGBoost, shap_values is a list of arrays (one per class).
+            # We take the mean absolute SHAP values across all classes or just return the biggest ones.
+            if isinstance(shap_values, list):
+                # Calculate mean absolute impact across all classes
+                impact = np.abs(np.array(shap_values)).mean(axis=0)[0]
+            else:
+                # Binary classification or single array
+                impact = np.abs(shap_values[0])
+                
+            # Pair feature names with their absolute SHAP impact and raw values
+            # We determine direction based on whether the class-specific SHAP value is positive
+            top_features = []
+            for i, f_name in enumerate(self.diet_features):
+                raw_val = float(X[0][i])
+                shap_val = float(impact[i])
+                # For multi-class magnitude, direction is simplified
+                direction = "increases_risk" if shap_val > 0 else "decreases_risk"
+                
+                top_features.append({
+                    "feature": f_name,
+                    "raw_value": round(raw_val, 2),
+                    "shap_value": round(shap_val, 3),
+                    "direction": direction
+                })
+                
+            # Sort by highest impact
+            top_features.sort(key=lambda x: x["shap_value"], reverse=True)
+            
+            return {
+                "model_type": "Diet Classifier (XGBoost)",
+                "base_value": 0.0,
+                "note": "SHAP magnitude for predicted diet class.",
+                "top_features": top_features[:top_n]
+            }
+        except Exception as exc:
+            log.warning("shap_diet_failed", error=str(exc))
+            return None
 
     def _encode_diet(self, col: str, val: str) -> int:
         classes = self.diet_encoders.get(col, [])
@@ -235,14 +291,25 @@ class MLService:
         fat = target_fat or (cal * 0.30 / 9)
         sod = target_sodium or 2300
 
+        # KNN Hard-Filter Mask
+        # Only allow meals explicitly matching the disease or generic 'None'
+        disease = p.disease_type
+        valid_diseases = [disease, "None"] if disease != "None" else ["None"]
+        
+        # We need the indices of valid meals
+        mask = self.meal_database['Disease'].isin(valid_diseases)
+        if not mask.any():
+            # Fallback if no specific meals found (safety first, return 'None' diseases)
+            mask = self.meal_database['Disease'] == "None"
+            
+        valid_indices = self.meal_database[mask].index.tolist()
+        
         # Build numerical vector ['Calories', 'Protein', 'Carbohydrates', 'Fat', 'Sodium']
         num_vec = np.array([[cal, pro, carb, fat, sod]])
         num_vec_scaled = self.meal_scaler.transform(num_vec)
         
         # Encode categorical ['Dietary Preference', 'Disease']
-        # For Dietary Preference, map p.restrictions or just use "Omnivore"
         diet_pref = "Omnivore" if p.restrictions == "None" else p.restrictions
-        disease = p.disease_type
         
         cat_vec = []
         for col in self.meal_cat_features:
@@ -250,14 +317,23 @@ class MLService:
             encoded = self._encode_meal(col, val) * self.meal_weight_penalty
             cat_vec.append(encoded)
             
-        # Combine
         query_vec = np.hstack([num_vec_scaled, np.array([cat_vec])])
         
-        # KNN search
-        distances, indices = self.meal_knn.kneighbors(query_vec)
+        # Retrieve all neighbors from the original KNN model but filter out invalid ones
+        # We ask for a large number of neighbors and pick the first valid one
+        n_neighbors = min(100, len(self.meal_database))
+        distances, indices = self.meal_knn.kneighbors(query_vec, n_neighbors=n_neighbors)
         
-        # Return the best match (the closest neighbor) as a full day's plan
-        best_idx = indices[0][0]
+        best_idx = None
+        for idx in indices[0]:
+            if idx in valid_indices:
+                best_idx = idx
+                break
+                
+        if best_idx is None:
+            # Fallback to absolute closest if somehow mask completely failed
+            best_idx = indices[0][0]
+            
         row = self.meal_database.iloc[best_idx]
         
         # Split daily macros roughly across 4 meals to render nicely
@@ -297,10 +373,13 @@ class MLService:
                 "loaded":       not isinstance(model, _MockModel) and model is not None,
                 "class_name":   type(model).__name__
             }
-        return {
+        info = {
             "diet": _info(self.diet_model, "diet"),
             "risk": _info(self.risk_model, "risk"),
             "meal": _info(self.meal_knn, "meal"),
         }
+        if hasattr(self, 'checksums'):
+            info["checksums"] = self.checksums
+        return info
 
 ml_service = MLService()
