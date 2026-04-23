@@ -52,7 +52,7 @@ knn = NearestNeighbors(n_neighbors=3, metric='euclidean', algorithm='brute')
 knn.fit(X)
 
 # 4. Save the Model and necessary data for inference
-out_dir = r"D:\Projects\nutriai_backend\models"
+out_dir = r"D:\Projects\nutriai_backend\ml"
 os.makedirs(out_dir, exist_ok=True)
 
 joblib.dump(knn, os.path.join(out_dir, "new_meal_knn.pkl"))

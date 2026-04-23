@@ -79,7 +79,7 @@ print(f"Best Model Test Accuracy: {best_acc:.4f} | F1-Score: {best_f1:.4f}")
 print("\nClassification Report:\n", classification_report(y_test, y_pred_best, target_names=le_target.classes_))
 
 # 5. Save the best model
-out_dir = r"D:\Projects\nutriai_backend\models"
+out_dir = r"D:\Projects\nutriai_backend\ml"
 os.makedirs(out_dir, exist_ok=True)
 
 joblib.dump(best_model, os.path.join(out_dir, "new_diet_classifier.pkl"))
