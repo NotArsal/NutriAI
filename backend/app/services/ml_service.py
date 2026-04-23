@@ -294,6 +294,10 @@ class MLService:
         Run a 'Warm-up Prediction' to ensure model integrity.
         Returns True if the output matches the expected clinical benchmark.
         """
+        if not self._loaded:
+            log.critical("benchmark_failed", reason="Models not loaded")
+            return False
+            
         from app.schemas.patient import PatientInput
         dummy_patient = PatientInput(
             age=45, gender="Male", weight_kg=75, height_cm=170,

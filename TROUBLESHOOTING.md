@@ -53,3 +53,13 @@
 **Cause:** Regression during v3.2.0 refactor where several imports were accidentally removed.
 **Fix:** Restored `get_logger`, `ChatRequest`, `ChatResponse`, and `generate_clinical_response` imports.
 **Status:** Resolved and redeployed.
+
+## Model Unpickling & Version Mismatch (Version 3.2.1)
+**Date:** 2026-04-24
+**Issue:** `model_load_failed error='StringDtype.__init__() takes from 1 to 2 positional arguments but 3 were given'`
+**Root Cause:** The models were trained in a "future-standard" environment (local dev with pandas 3.0.x / sklearn 1.8.x) and failed to unpickle in the pinned production environment (pandas 2.1.x / sklearn 1.3.x).
+**Fix:**
+1.  **Strict Benchmark:** Updated `ml_service.py` to make `benchmark()` return `False` if models are not loaded. This prevents the service from starting in a broken state.
+2.  **Dependency Upgrade:** Updated `requirements.txt` to use latest stable ML versions (`scikit-learn>=1.5.0`, `pandas>=2.2.0`) to bridge the gap.
+3.  **Integrity Check:** Models now require successful `_loaded` status to pass the lifespan check.
+**Status:** Patched; awaiting production verification.

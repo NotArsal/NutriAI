@@ -10,11 +10,11 @@ python-multipart>=0.0.9
 email-validator>=2.0.0
 
 # ── ML stack ──────────────────────────────────────────────────────────────────
-scikit-learn==1.3.2
-xgboost==2.0.0
-numpy==1.26.4
-pandas==2.1.3
-joblib==1.3.2
+scikit-learn>=1.5.0
+xgboost>=2.0.0
+numpy>=1.26.4
+pandas>=2.2.0
+joblib>=1.4.2
 
 # ── SHAP explainability ────────────────────────────────────────────────────────
 shap==0.44.0
