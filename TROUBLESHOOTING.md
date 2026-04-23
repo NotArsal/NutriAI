@@ -58,3 +58,15 @@ This document tracks common errors encountered during the deployment of the Nutr
 **Error:** The Render deployment fails and exits with status 1.
 **Cause:** The metadata variable `MODEL_CARD_DATA` was missing from `ml_service.py`, causing the `/health` endpoint router to crash on import.
 **Fix:** Restored `MODEL_CARD_DATA` and compatibility dictionaries (`meal_classes`, `meta`) inside `app/services/ml_service.py`. The API router can now query the model's properties safely.
+
+---
+
+## 7. Backend: `FileNotFoundError` (Model Loading)
+**Error:** The service is live, but the logs show `model_load_failed` with `[Errno 2] No such file or directory: '/app/ml/new_diet_classifier.pkl'`.
+**Cause:** 
+* The training scripts were saving models to a local `models/` directory, but the backend `config.py` was looking in the `ml/` directory.
+* Additionally, some artifacts (like the XGBoost classifier) were not successfully pushed to GitHub initially.
+**Fix:**
+* Updated all training scripts (`scripts/phase2_*.py`) to save directly into the `ml/` directory.
+* Regenerated all models and verified their presence in the `ml/` folder before pushing to GitHub.
+* This ensures that when Render builds the Docker image, the artifacts are physically present in the expected location.
