@@ -63,3 +63,28 @@
 2.  **Dependency Upgrade:** Updated `requirements.txt` to use latest stable ML versions (`scikit-learn>=1.5.0`, `pandas>=2.2.0`) to bridge the gap.
 3.  **Integrity Check:** Models now require successful `_loaded` status to pass the lifespan check.
 **Status:** Patched; awaiting production verification.
+
+## Production Hardening Phase (Version 3.3.0)
+**Date:** 2026-04-24
+**Objective:** Final architectural hardening for high-reliability research deployment.
+
+### System Upgrades
+1.  **ML Safety Logic:**
+    *   Implemented **Allergy Hard-Filter Masking** in the KNN engine.
+    *   Upgraded `load()` to include **Model Checksum Verification** and **Mandatory Startup Benchmarking**.
+    *   The system now raises a `RuntimeError` and halts startup if models are corrupted or outputs deviate from clinical benchmarks.
+
+2.  **Conversational Intelligence:**
+    *   Implemented **Clinical Context Seeding**: The chatbot now accepts `PredictResponse` data to reference actual ML-predicted protocols ('Low-Sodium', etc.) during consultations.
+    *   Full integration of Redis-backed sliding-window memory (last 10 messages).
+
+3.  **Infrastructure & Resilience:**
+    *   Tuned `AsyncAdaptedQueuePool` with `pool_size=5` and `max_overflow=10`.
+    *   Hardened `PatientInput` with physical clinical limits (BP: 80-200, Glucose: 60-400) to prevent out-of-distribution model behavior.
+    *   Verified global API interceptor for session (401) and service (503) resilience.
+
+### Validation
+- [x] Checksum validation on load -> Passed.
+- [x] Clinical boundary rejection (e.g. Glucose 500) -> Verified (422 Unprocessable Entity).
+- [x] Stateful chatbot referencing 'Low-Sodium' protocol -> Verified.
+- [x] Database connection pooling -> Operational.

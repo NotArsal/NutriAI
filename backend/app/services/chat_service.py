@@ -45,12 +45,21 @@ def _check_safety_guardrails(user_msg: str) -> str | None:
         
     return None
 
-async def generate_clinical_response(patient: PatientInput, messages: List[dict], user_id: str | None = None) -> str:
+async def generate_clinical_response(
+    patient: PatientInput, 
+    messages: List[dict], 
+    user_id: str | None = None,
+    prediction: Optional[dict] = None
+) -> str:
     """
     Context-aware clinical response using Simulated LLM logic, KNN bridging, and Redis memory.
     """
     user_msg = messages[-1].get("content", "").lower() if messages else ""
     bmi = patient.bmi
+    
+    # 0. Extraction from ML-Predicted Protocol (Track 2 Clinical Context Bridge)
+    diet_protocol = prediction.get("diet") if prediction else "Standard Clinical"
+    risk_level = prediction.get("riskLevel") if prediction else "Unknown"
     
     # 1. Safety Guardrails
     safety_response = _check_safety_guardrails(user_msg)
@@ -102,6 +111,7 @@ async def generate_clinical_response(patient: PatientInput, messages: List[dict]
     else:
         text = (
             f"NutriAI Session Active (Turn {context['turn_count']}).\n"
+            f"Our models have classified your case as **{risk_level} Risk** requiring a **{diet_protocol}** protocol. "
             f"Tracking your **{patient.disease_type}** history with a focus on your current glucose ({patient.glucose} mg/dL). "
             f"I recommend maintaining your {patient.daily_caloric} kcal target. "
             "Ask me for 'alternatives' if you need a new meal plan."

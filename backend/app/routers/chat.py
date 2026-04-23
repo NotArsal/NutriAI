@@ -31,7 +31,8 @@ async def chat(
         text = await generate_clinical_response(
             request_body.patient_data, 
             messages, 
-            user_id=str(current_user.id) if current_user else None
+            user_id=str(current_user.id) if current_user else None,
+            prediction=request_body.prediction.model_dump() if request_body.prediction else None
         )
         log.info("chat_response_generated", user_id=str(current_user.id) if current_user else None)
         return ChatResponse(content=[{"text": text}])

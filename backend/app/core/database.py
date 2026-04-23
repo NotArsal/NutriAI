@@ -22,8 +22,8 @@ engine = create_async_engine(
     echo=False,
     # AsyncAdaptedQueuePool: Production-ready connection pooling.
     # We maintain a pool of open connections to reduce TCP handshake latency.
-    pool_size=settings.db_pool_size,
-    max_overflow=settings.db_max_overflow,
+    pool_size=5, # Standard for Render free/hobby tiers
+    max_overflow=10,
     pool_pre_ping=True, # Validates connections before checkout
 )
 

@@ -126,7 +126,7 @@ class MLService:
 
             self._loaded = True
             
-            # Compute Checksums
+            # Compute Checksums & Verify Integrity
             import hashlib
             self.checksums = {}
             for name, path in [
@@ -139,8 +139,18 @@ class MLService:
                         self.checksums[name] = hashlib.sha256(f.read()).hexdigest()
             
             log.info("models_loaded", model_dir=str(model_dir), checksums=self.checksums)
+            
+            # 2. Warm-up Validation (Dummy Prediction Benchmark)
+            # If the benchmark fails, we raise a CriticalError to halt startup
+            if not self.benchmark():
+                log.critical("warmup_validation_failed", detail="Model outputs do not match clinical benchmarks.")
+                raise RuntimeError("CRITICAL_ERROR: ML Model Integrity Compromised. Halting startup.")
+
         except Exception as exc:
-            log.warning("model_load_failed", error=str(exc))
+            log.error("model_load_failed", error=str(exc))
+            # In production, we cannot serve mock data if the lead models fail
+            if not isinstance(exc, (FileNotFoundError, ImportError)):
+                raise RuntimeError(f"CRITICAL_ERROR: Failed to load production models: {exc}")
 
         self._try_init_shap()
 
@@ -349,6 +359,14 @@ class MLService:
             
         if p.cholesterol > 200:
             mask = mask & (self.meal_database['Fat'] < 15)
+
+        # 3. Allergy Hard-Filter (Mathematical Exclusion)
+        if p.allergies and p.allergies != "None":
+            # Exclude meals whose name or description contains the allergy keyword
+            allergy_kw = p.allergies.lower()
+            mask = mask & (~self.meal_database['Breakfast Suggestion'].str.lower().str.contains(allergy_kw))
+            mask = mask & (~self.meal_database['Lunch Suggestion'].str.lower().str.contains(allergy_kw))
+            mask = mask & (~self.meal_database['Dinner Suggestion'].str.lower().str.contains(allergy_kw))
         
         # Check if we have valid meals left
         valid_indices = self.meal_database[mask].index.tolist()

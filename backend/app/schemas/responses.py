@@ -142,8 +142,9 @@ class ChatMessage(BaseModel):
 
 
 class ChatRequest(BaseModel):
-    patient_data: "PatientInput"  # forward ref resolved at runtime
+    patient_data: "PatientInput"
     messages:     List[ChatMessage]
+    prediction:   Optional[PredictResponse] = Field(None, description="The results from the last prediction to seed the chatbot context")
 
 
 class ChatResponse(BaseModel):
