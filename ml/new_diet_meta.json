@@ -1,0 +1,45 @@
+{
+    "target_classes": [
+        "Balanced",
+        "Low_Carb",
+        "Low_Sodium"
+    ],
+    "feature_encoders": {
+        "Gender": [
+            "Female",
+            "Male"
+        ],
+        "Disease_Type": [
+            "Diabetes",
+            "Hypertension",
+            "Obesity",
+            NaN
+        ],
+        "Severity": [
+            "Mild",
+            "Moderate",
+            "Severe"
+        ],
+        "Physical_Activity_Level": [
+            "Active",
+            "Moderate",
+            "Sedentary"
+        ],
+        "Dietary_Restrictions": [
+            "Low_Sodium",
+            "Low_Sugar",
+            NaN
+        ],
+        "Allergies": [
+            "Gluten",
+            "Peanuts",
+            NaN
+        ],
+        "Preferred_Cuisine": [
+            "Chinese",
+            "Indian",
+            "Italian",
+            "Mexican"
+        ]
+    }
+}

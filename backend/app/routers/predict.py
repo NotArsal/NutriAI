@@ -138,7 +138,8 @@ async def predict(
     risk_level = "High" if risk_score >= 70 else "Moderate" if risk_score >= 40 else "Low"
 
     # Meal
-    meal_cat = ml_service.predict_meal(X)
+    meals = ml_service.predict_meal(patient)
+    meal_cat = "Personalized KNN Plan"
 
     # ── Rule-Based Overrides ──────────────────────────────────────────────
     rule_overrides = []
@@ -194,8 +195,8 @@ async def predict(
         nutrient_imbalance=patient.nutrient_imbalance,
     )
 
-    # Meals
-    meals = get_meals(meal_cat, patient.cuisine, patient.restrictions, patient.allergies)
+    # Meals are already fetched via KNN
+    # meals = get_meals(meal_cat, patient.cuisine, patient.restrictions, patient.allergies)
 
     # Insights
     insights = _build_insights(patient, bmi)

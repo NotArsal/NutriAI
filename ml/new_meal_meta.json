@@ -1,0 +1,37 @@
+{
+    "num_features": [
+        "Calories",
+        "Protein",
+        "Carbohydrates",
+        "Fat",
+        "Sodium"
+    ],
+    "cat_features": [
+        "Dietary Preference",
+        "Disease"
+    ],
+    "encoders": {
+        "Dietary Preference": [
+            "Omnivore",
+            "Pescatarian",
+            "Vegan",
+            "Vegetarian"
+        ],
+        "Disease": [
+            "Diabetes, Acne, Hypertension, Heart Disease",
+            "Diabetes, Acne, Hypertension, Kidney Disease",
+            "Diabetes, Acne, Weight Gain, Hypertension, Heart Disease",
+            "Diabetes, Acne, Weight Gain, Hypertension, Heart Disease, Kidney Disease",
+            "Diabetes, Acne, Weight Loss, Hypertension, Heart Disease, Kidney Disease",
+            "Hypertension, Heart Disease",
+            "Hypertension, Heart Disease, Kidney Disease",
+            "Hypertension, Kidney Disease",
+            "Kidney Disease",
+            "Weight Gain",
+            "Weight Gain, Hypertension, Heart Disease",
+            "Weight Gain, Hypertension, Heart Disease, Kidney Disease",
+            "Weight Gain, Kidney Disease"
+        ]
+    },
+    "weight_penalty": 1000
+}

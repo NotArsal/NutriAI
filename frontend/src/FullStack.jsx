@@ -968,7 +968,7 @@ function filterMealsByAllergen(meals, allergies) {
 }
 
 function MealPlanPage({ form, result }) {
-  const rawMeals = MEALS_DB[result.mealCat]?.[form.cuisine] || MEALS_DB[result.mealCat]?.Indian || [];
+  const rawMeals = result.recommended_meals || [];
   const meals = filterMealsByAllergen(rawMeals, form.allergies);
   const plan = DIET_PLANS[result.diet];
   const totalKcal = meals.reduce((a,m) => a+m.kcal, 0);
@@ -1282,7 +1282,7 @@ function ProgressPage({ form, result }) {
 ═══════════════════════════════════════════════════════════════════ */
 function ReportPage({ form, result }) {
   const plan = DIET_PLANS[result.diet];
-  const meals = MEALS_DB[result.mealCat]?.[form.cuisine] || [];
+  const meals = result.recommended_meals || [];
   const totalKcal = meals.reduce((a,m) => a+m.kcal, 0);
 
   const printReport = () => {
