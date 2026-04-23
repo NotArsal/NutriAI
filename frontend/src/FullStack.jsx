@@ -1345,7 +1345,7 @@ function ReportPage({ form, result }) {
       </table>
 
       <footer>
-        NutriPlanner Clinical Platform · Models: GBM (diet, ${(result.conf*100).toFixed(0)}% conf) · RF Regressor (risk, RMSE 3.9) · RF Classifier (meals) · Trained on 1,000 patient records<br/>
+        NutriPlanner Clinical Platform · Models: XGBoost (diet, ${(result.conf*100).toFixed(0)}% conf) · RF Regressor (risk, RMSE 3.9) · RF Regressor (macros, R² 0.95) · KNN (meals) · Trained on 3,000+ clinical records<br/>
         ⚕️ This report is for informational purposes only. Always consult a licensed dietitian or physician before making dietary changes.
       </footer>
       </body></html>`);
