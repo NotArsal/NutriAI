@@ -39,6 +39,18 @@ class Settings(BaseSettings):
 
     # ── Database ───────────────────────────────────────────────────────
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nutriplanner"
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def fix_postgres_scheme(cls, v: str) -> str:
+        """Handle Render's 'postgres://' and enforce '+asyncpg'."""
+        if not v or not isinstance(v, str):
+            return v
+        if v.startswith("postgres://"):
+            v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif v.startswith("postgresql://") and "+asyncpg" not in v:
+            v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
     
     # ── Redis ──────────────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"
