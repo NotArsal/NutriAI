@@ -1,6 +1,12 @@
-# render.yaml — Render.com deployment config
-# Commit this to your repo root. Render auto-detects it.
+# render.yaml — Render.com Blueprint (auto-detected from repo root)
 # Docs: https://render.com/docs/blueprint-spec
+#
+# Required env vars to set manually in the Render dashboard
+# (marked sync: false so Render prompts you to fill them in):
+#   SECRET_KEY       → openssl rand -hex 32
+#   DATABASE_URL     → from your Render PostgreSQL add-on (Internal URL)
+#   REDIS_URL        → from your Render Redis add-on (Internal URL)
+#   ALLOWED_ORIGINS  → your Vercel frontend URL, e.g. https://nutriai.vercel.app
 
 services:
   - type: web
@@ -11,8 +17,42 @@ services:
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     plan: free
     healthCheckPath: /health
+    autoDeploy: true
     envVars:
-      - key: ALLOWED_ORIGINS
-        value: https://nutriplanner.vercel.app  # ← update to your actual Vercel URL after first deploy
+      # ── Python version ────────────────────────────────────────────────
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: "3.11.0"
+
+      # ── App settings ──────────────────────────────────────────────────
+      - key: ENVIRONMENT
+        value: production
+
+      # ── CORS ─────────────────────────────────────────────────────────
+      # Set this to your actual Vercel frontend URL after first deploy.
+      # Multiple origins: comma-separated (no spaces).
+      - key: ALLOWED_ORIGINS
+        value: https://nutriai.vercel.app
+
+      # ── JWT Auth ──────────────────────────────────────────────────────
+      # SECRET_KEY must be set manually in the Render dashboard.
+      # Generate one: openssl rand -hex 32
+      - key: SECRET_KEY
+        sync: false          # Render will prompt you to fill this in
+
+      - key: ALGORITHM
+        value: HS256
+
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "10080"       # 7 days
+
+      # ── Database ──────────────────────────────────────────────────────
+      # Attach a Render PostgreSQL instance and copy its Internal Database URL.
+      # Without this the app still runs; /auth and /reports return HTTP 503.
+      - key: DATABASE_URL
+        sync: false          # Render will prompt you to fill this in
+
+      # ── Redis ─────────────────────────────────────────────────────────
+      # Attach a Render Redis instance and copy its Internal Redis URL.
+      # Without this the app still runs; prediction caching is skipped.
+      - key: REDIS_URL
+        sync: false          # Render will prompt you to fill this in
