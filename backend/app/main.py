@@ -22,7 +22,7 @@ from app.config import get_settings
 from app.core.database import engine, Base
 from app.core.redis_client import redis_client
 from app.core.logging import LoggingMiddleware, configure_logging, get_logger
-from app.routers import auth, chat, health, meals, predict
+from app.routers import auth, chat, health, meals, predict, reports
 from app.services.ml_service import ml_service
 
 settings = get_settings()
@@ -90,6 +90,7 @@ def create_app() -> FastAPI:
         allow_origin_regex=r"https://.*\.vercel\.app",
         allow_methods=["*"],
         allow_headers=["*"],
+        allow_credentials=True,
     )
 
     # ── Logging middleware ─────────────────────────────────────────────
@@ -105,6 +106,7 @@ def create_app() -> FastAPI:
     app.include_router(predict.router)
     app.include_router(meals.router)
     app.include_router(chat.router)
+    app.include_router(reports.router)
 
     return app
 

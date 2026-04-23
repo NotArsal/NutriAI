@@ -4,18 +4,22 @@ app/models/prediction.py — SQLAlchemy Prediction log model mapping.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from sqlalchemy import Float, ForeignKey, Integer, String, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from typing import Optional, TYPE_CHECKING
+from sqlalchemy import Float, ForeignKey, String, DateTime
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.database import Base
+
+if TYPE_CHECKING:
+    from app.models.user import User
 
 
 class PredictionLog(Base):
     __tablename__ = "predictions"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True, nullable=True)
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"), index=True, nullable=True)
     
     # Store the input subset directly for tracking
     patient_inputs: Mapped[dict] = mapped_column(JSONB, nullable=False)
@@ -28,3 +32,6 @@ class PredictionLog(Base):
     # Metadata
     hashed_input: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    # Relationships
+    user: Mapped[Optional["User"]] = relationship("User", back_populates="predictions")

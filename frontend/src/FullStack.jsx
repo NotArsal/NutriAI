@@ -3,6 +3,23 @@ import "./index.css";
 
 const BACKEND_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
+/* ═══════════════════════════════════════════════════════════════════
+   AUTH UTILITIES
+═══════════════════════════════════════════════════════════════════ */
+const getToken = () => localStorage.getItem("nutriai_token");
+const setToken = (t) => localStorage.setItem("nutriai_token", t);
+const clearToken = () => localStorage.removeItem("nutriai_token");
+
+// Authenticated fetch — always injects Bearer token if present
+const apiFetch = async (path, opts = {}) => {
+  const token = getToken();
+  const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${BACKEND_URL}${path}`, { ...opts, headers });
+  if (res.status === 401) { clearToken(); window.location.reload(); }
+  return res;
+};
+
 const mapFormToPatient = (f) => ({
   age: f.age, gender: f.gender, weight_kg: f.weight, height_cm: f.height,
   disease_type: f.diseaseType, severity: f.severity, activity_level: f.activity,
@@ -349,11 +366,15 @@ const NAV_ITEMS = [
   { id:"calculator",label:"Calculator",   icon:"M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14h-2v-4H8v-2h4V7h2v4h4v2h-4v4z" },
   { id:"progress",  label:"Progress",     icon:"M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z" },
   { id:"report",    label:"Report",       icon:"M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 5h-3v5.5a2.5 2.5 0 0 1-5 0 2.5 2.5 0 0 1 2.5-2.5c.57 0 1.08.19 1.5.51V5h4v2zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6z" },
+  { id:"history",   label:"My History",   icon:"M13 3a9 9 0 1 0 9 9h-2a7 7 0 1 1-7-7v4l5-5-5-5v4z" },
   { id:"metrics",   label:"Metrics (Acc.)",icon:"M3 3h18v18H3V3zm16 16V5H5v14h14zM7 17h2v-7H7v7zm4 0h2V7h-2v10zm4 0h2v-4h-2v4z" },
   { id:"aichat",    label:"AI Consult",   icon:"M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" },
 ];
 
-function Sidebar({ active, onNav, result }) {
+function Sidebar({ active, onNav, result, user, onLogout }) {
+  const initials = user?.full_name
+    ? user.full_name.split(" ").map(w => w[0]).join("").slice(0,2).toUpperCase()
+    : user?.email?.[0]?.toUpperCase() || "?";
   return (
     <div style={{ width:220, background:C.bg1, borderRight:`1px solid ${C.border}`, display:"flex", flexDirection:"column", height:"100vh", flexShrink:0 }}>
       {/* Logo */}
@@ -407,6 +428,205 @@ function Sidebar({ active, onNav, result }) {
           <div style={{ fontSize:11, color:C.t2, marginTop:4 }}>{result.riskLevel} risk · {result.diet.replace("_"," ")}</div>
         </div>
       )}
+
+      {/* User profile + Logout */}
+      {user && (
+        <div style={{ padding:"12px 14px", borderTop:`1px solid ${C.border}` }}>
+          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:8 }}>
+            <div style={{ width:30, height:30, borderRadius:"50%", background:`${C.green}20`,
+              border:`1px solid ${C.green}40`, display:"flex", alignItems:"center",
+              justifyContent:"center", flexShrink:0, fontSize:12, fontWeight:600, color:C.green }}>
+              {initials}
+            </div>
+            <div style={{ overflow:"hidden" }}>
+              <div style={{ fontSize:12, fontWeight:500, color:C.t0, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                {user.full_name || "My Account"}
+              </div>
+              <div style={{ fontSize:10, color:C.t2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                {user.email}
+              </div>
+            </div>
+          </div>
+          <button onClick={onLogout}
+            style={{ width:"100%", display:"flex", alignItems:"center", gap:8, padding:"7px 10px", borderRadius:6,
+              background:"rgba(239,68,68,.06)", border:"1px solid rgba(239,68,68,.18)",
+              color:C.red, fontSize:12, cursor:"pointer" }}>
+            <svg width={13} height={13} viewBox="0 0 24 24" fill={C.red}>
+              <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+            </svg>
+            Sign out
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PAGE: AUTH (LOGIN / REGISTER)
+═══════════════════════════════════════════════════════════════════ */
+function AuthPage({ onAuth }) {
+  const [mode, setMode] = useState("login"); // "login" | "register"
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+
+  const inputStyle = (focused) => ({
+    width: "100%", padding: "11px 14px", background: C.bg2,
+    border: `1px solid ${focused ? C.green : C.border}`, borderRadius: 8,
+    color: C.t0, fontSize: 14, outline: "none", transition: "border-color .15s",
+    boxSizing: "border-box",
+  });
+
+  const [focusedField, setFocusedField] = useState(null);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      if (mode === "register") {
+        // Step 1: Register
+        const regRes = await fetch(`${BACKEND_URL}/auth/register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password, full_name: fullName || null }),
+        });
+        if (!regRes.ok) {
+          const d = await regRes.json();
+          throw new Error(d.detail || "Registration failed");
+        }
+      }
+      // Step 2: Login (always)
+      const formData = new URLSearchParams();
+      formData.append("username", email);
+      formData.append("password", password);
+      const loginRes = await fetch(`${BACKEND_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: formData,
+      });
+      if (!loginRes.ok) {
+        const d = await loginRes.json();
+        throw new Error(d.detail || "Login failed");
+      }
+      const { access_token } = await loginRes.json();
+      setToken(access_token);
+      // Fetch user profile
+      const meRes = await fetch(`${BACKEND_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      const user = await meRes.json();
+      onAuth(user, access_token);
+    } catch (err) {
+      setError(err.message);
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "linear-gradient(135deg, #f0fdf4 0%, #f8fafc 50%, #eff6ff 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24, fontFamily: F.sans }}>
+      <div style={{ width: "100%", maxWidth: 420 }}>
+        {/* Logo */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 40, justifyContent: "center" }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: C.green, display: "flex",
+            alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(22,163,74,.3)" }}>
+            <svg width={18} height={18} viewBox="0 0 16 16" fill="none">
+              <path d="M8 2C5.8 2 4 3.8 4 6c0 1.5.8 2.8 2 3.5V11h4V9.5C11.2 8.8 12 7.5 12 6c0-2.2-1.8-4-4-4z" fill="#000" />
+              <rect x={6} y={11} width={4} height={2} rx={1} fill="#000" />
+              <rect x={6.5} y={13} width={3} height={1} rx={.5} fill="#000" />
+            </svg>
+          </div>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: C.t0, letterSpacing: "-.02em" }}>NutriPlanner</div>
+            <div style={{ fontSize: 11, color: C.t2, letterSpacing: ".05em" }}>Clinical Nutrition Platform</div>
+          </div>
+        </div>
+
+        {/* Card */}
+        <div style={{ background: "#fff", border: `1px solid ${C.border}`, borderRadius: 16,
+          padding: "32px 28px", boxShadow: "0 4px 24px rgba(0,0,0,.06)" }}>
+          {/* Mode tabs */}
+          <div style={{ display: "flex", background: C.bg2, borderRadius: 8, padding: 3, marginBottom: 28, gap: 3 }}>
+            {["login", "register"].map(m => (
+              <button key={m} onClick={() => { setMode(m); setError(""); }}
+                style={{ flex: 1, padding: "8px 0", borderRadius: 6, border: "none", fontSize: 13, fontWeight: 500,
+                  cursor: "pointer", transition: "all .2s",
+                  background: mode === m ? "#fff" : "transparent",
+                  color: mode === m ? C.t0 : C.t2,
+                  boxShadow: mode === m ? "0 1px 4px rgba(0,0,0,.08)" : "none" }}>
+                {m === "login" ? "Sign in" : "Create account"}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {mode === "register" && (
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: C.t1, marginBottom: 6, display: "block" }}>Full name (optional)</label>
+                <input value={fullName} onChange={e => setFullName(e.target.value)}
+                  placeholder="Dr. Jane Smith"
+                  onFocus={() => setFocusedField("name")} onBlur={() => setFocusedField(null)}
+                  style={inputStyle(focusedField === "name")} />
+              </div>
+            )}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: C.t1, marginBottom: 6, display: "block" }}>Email address</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com" required
+                onFocus={() => setFocusedField("email")} onBlur={() => setFocusedField(null)}
+                style={inputStyle(focusedField === "email")} />
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: C.t1, marginBottom: 6, display: "block" }}>Password</label>
+              <div style={{ position: "relative" }}>
+                <input type={showPass ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder={mode === "register" ? "At least 8 characters" : "Your password"} required
+                  onFocus={() => setFocusedField("pass")} onBlur={() => setFocusedField(null)}
+                  style={{ ...inputStyle(focusedField === "pass"), paddingRight: 44 }} />
+                <button type="button" onClick={() => setShowPass(s => !s)}
+                  style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
+                    background: "none", border: "none", cursor: "pointer", color: C.t2, fontSize: 11, padding: 0 }}>
+                  {showPass ? "Hide" : "Show"}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div style={{ padding: "10px 14px", background: "rgba(239,68,68,.08)", border: "1px solid rgba(239,68,68,.2)",
+                borderRadius: 8, fontSize: 13, color: C.red }}>
+                {error}
+              </div>
+            )}
+
+            <button type="submit" disabled={loading}
+              style={{ padding: "12px 0", borderRadius: 8, background: C.green, border: "none",
+                color: "#000", fontSize: 14, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? .7 : 1, transition: "opacity .15s", display: "flex", alignItems: "center",
+                justifyContent: "center", gap: 8, marginTop: 4 }}>
+              {loading && <Spinner />}
+              {mode === "login" ? "Sign in to NutriPlanner" : "Create my account"}
+            </button>
+          </form>
+
+          <div style={{ marginTop: 20, textAlign: "center", fontSize: 12, color: C.t2 }}>
+            {mode === "login" ? "Don't have an account? " : "Already have an account? "}
+            <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
+              style={{ background: "none", border: "none", color: C.green, fontWeight: 500,
+                cursor: "pointer", fontSize: 12, padding: 0 }}>
+              {mode === "login" ? "Create one" : "Sign in"}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16, textAlign: "center", fontSize: 11, color: C.t2 }}>
+          Your data is private and only visible to you. For informational purposes only.
+        </div>
+      </div>
     </div>
   );
 }
@@ -1232,8 +1452,8 @@ RESPONSE STYLE:
     setMsgs(next); setInput(""); setLoading(true);
 
     try {
-      const res = await fetch(`${BACKEND_URL}/chat`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
+      const res = await apiFetch("/chat", {
+        method:"POST",
         body: JSON.stringify({ patient_data: mapFormToPatient(form), messages: next }),
       });
       const data = await res.json();
@@ -1257,8 +1477,8 @@ RESPONSE STYLE:
     };
 
     try {
-      const res = await fetch(`${BACKEND_URL}/chat`, {
-        method:"POST", headers:{"Content-Type":"application/json"},
+      const res = await apiFetch("/chat", {
+        method:"POST",
         body: JSON.stringify({ patient_data: mapFormToPatient(form), messages: [{ role: "user", content: init }] }),
       });
       const data = await res.json();
@@ -1406,21 +1626,181 @@ function MetricsPage() {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   PAGE: HISTORY (Per-user prediction reports)
+═══════════════════════════════════════════════════════════════════ */
+function HistoryPage() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [deleting, setDeleting] = useState(null);
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 10;
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await apiFetch(`/reports?skip=${page * PAGE_SIZE}&limit=${PAGE_SIZE}`);
+      if (!res.ok) throw new Error("Failed to load history");
+      const d = await res.json();
+      setData(d);
+    } catch (e) { setError(e.message); }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [page]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this report? This cannot be undone.")) return;
+    setDeleting(id);
+    await apiFetch(`/reports/${id}`, { method: "DELETE" });
+    setDeleting(null);
+    load();
+  };
+
+  const riskColor = (s) => s >= 70 ? C.red : s >= 40 ? C.amber : C.green;
+
+  if (loading) return (
+    <div style={{ padding: 40, display: "flex", alignItems: "center", gap: 12 }}>
+      <Spinner /><span style={{ fontSize: 13, color: C.t1 }}>Loading your history…</span>
+    </div>
+  );
+  if (error) return (
+    <div style={{ padding: 40, fontSize: 13, color: C.red }}>
+      {error}<br /><button onClick={load} style={{ marginTop: 10, color: C.green, background: "none", border: "none", cursor: "pointer", fontSize: 13 }}>Retry</button>
+    </div>
+  );
+
+  return (
+    <div style={{ padding: 24, maxWidth: 900 }}>
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontSize: 18, fontWeight: 600, color: C.t0, letterSpacing: "-.01em" }}>My Prediction History</div>
+        <div style={{ fontSize: 12, color: C.t2, marginTop: 3 }}>
+          {data?.total ?? 0} total reports · showing {PAGE_SIZE} per page
+        </div>
+      </div>
+
+      {!data?.predictions?.length ? (
+        <Card style={{ padding: "40px 24px", textAlign: "center" }}>
+          <div style={{ fontSize: 32, marginBottom: 12 }}>📋</div>
+          <div style={{ fontSize: 15, fontWeight: 500, color: C.t0, marginBottom: 6 }}>No reports yet</div>
+          <div style={{ fontSize: 13, color: C.t2 }}>Run your first prediction to see your history here.</div>
+        </Card>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {data.predictions.map((p) => (
+            <Card key={p.id} style={{ padding: "16px 20px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+                  {/* Risk badge */}
+                  <div style={{ textAlign: "center", minWidth: 48 }}>
+                    <Mono size={20} color={riskColor(p.risk_score)}>{p.risk_score.toFixed(0)}</Mono>
+                    <div style={{ fontSize: 10, color: C.t2, marginTop: 2 }}>Risk</div>
+                  </div>
+                  <div style={{ width: 1, height: 36, background: C.border }} />
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: C.t0 }}>{p.diet_recommendation.replace("_", " ")} Diet</div>
+                    <div style={{ fontSize: 12, color: C.t2, marginTop: 2 }}>
+                      {p.meal_category} · {p.patient_inputs?.disease_type || "—"} · BMI {
+                        p.patient_inputs?.weight_kg && p.patient_inputs?.height_cm
+                          ? (p.patient_inputs.weight_kg / (p.patient_inputs.height_cm / 100) ** 2).toFixed(1)
+                          : "—"
+                      }
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ fontSize: 11, color: C.t2 }}>
+                    {new Date(p.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  </div>
+                  <button onClick={() => handleDelete(p.id)} disabled={deleting === p.id}
+                    style={{ padding: "5px 12px", borderRadius: 5, border: "1px solid rgba(239,68,68,.25)",
+                      background: "rgba(239,68,68,.06)", color: C.red, fontSize: 11, cursor: "pointer",
+                      opacity: deleting === p.id ? .5 : 1 }}>
+                    {deleting === p.id ? "…" : "Delete"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Mini biomarker strip */}
+              <div style={{ display: "flex", gap: 16, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.border}`, flexWrap: "wrap" }}>
+                {[
+                  ["Glucose", p.patient_inputs?.glucose, "mg/dL"],
+                  ["BP", p.patient_inputs?.blood_pressure, "mmHg"],
+                  ["Cholesterol", p.patient_inputs?.cholesterol, "mg/dL"],
+                  ["Activity", p.patient_inputs?.activity_level, ""],
+                ].map(([label, val, unit]) => val !== undefined && (
+                  <div key={label}>
+                    <div style={{ fontSize: 10, color: C.t2 }}>{label}</div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: C.t0 }}>{val}{unit ? ` ${unit}` : ""}</div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          ))}
+
+          {/* Pagination */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+            <button onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}
+              style={{ padding: "7px 16px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg1,
+                color: page === 0 ? C.t3 : C.t1, fontSize: 13, cursor: page === 0 ? "not-allowed" : "pointer" }}>
+              ← Previous
+            </button>
+            <span style={{ fontSize: 12, color: C.t2 }}>Page {page + 1} of {Math.max(1, Math.ceil((data?.total || 0) / PAGE_SIZE))}</span>
+            <button onClick={() => setPage(p => p + 1)}
+              disabled={(page + 1) * PAGE_SIZE >= (data?.total || 0)}
+              style={{ padding: "7px 16px", borderRadius: 6, border: `1px solid ${C.border}`, background: C.bg1,
+                color: (page + 1) * PAGE_SIZE >= (data?.total || 0) ? C.t3 : C.t1, fontSize: 13,
+                cursor: (page + 1) * PAGE_SIZE >= (data?.total || 0) ? "not-allowed" : "pointer" }}>
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    ROOT APP
 ═══════════════════════════════════════════════════════════════════ */
 export default function App() {
-  const [view, setView] = useState("onboarding");
+  // Auth state: null = not loaded, false = unauthenticated, object = user
+  const [authUser, setAuthUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  const [view, setView] = useState("onboarding"); // "onboarding" | "app"
   const [form, setForm] = useState(null);
   const [result, setResult] = useState(null);
   const [page, setPage] = useState("dashboard");
   const [submitting, setSubmitting] = useState(false);
 
+  // On mount: check if a token already exists in localStorage → fetch /auth/me
+  useEffect(() => {
+    const token = getToken();
+    if (!token) { setAuthChecked(true); return; }
+    fetch(`${BACKEND_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => { if (!r.ok) throw new Error(); return r.json(); })
+      .then(user => { setAuthUser(user); setAuthChecked(true); })
+      .catch(() => { clearToken(); setAuthUser(false); setAuthChecked(true); });
+  }, []);
+
+  const handleAuth = (user) => { setAuthUser(user); };
+
+  const handleLogout = () => {
+    clearToken();
+    setAuthUser(false);
+    setForm(null);
+    setResult(null);
+    setView("onboarding");
+    setPage("dashboard");
+  };
+
   const handleSubmit = async (f) => {
     setForm(f);
     setSubmitting(true);
     try {
-      const res = await fetch(`${BACKEND_URL}/predict`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
+      const res = await apiFetch("/predict", {
+        method: "POST",
         body: JSON.stringify(mapFormToPatient(f)),
       });
       const data = await res.json();
@@ -1434,12 +1814,36 @@ export default function App() {
     setSubmitting(false);
   };
 
-  if (view === "onboarding") return (<OnboardingForm onSubmit={handleSubmit} submitting={submitting} />);
+  // Loading splash while checking token
+  if (!authChecked) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+      background: C.bg0, fontFamily: F.sans }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+        <div style={{ width: 36, height: 36, borderRadius: 8, background: C.green, display: "flex",
+          alignItems: "center", justifyContent: "center" }}>
+          <svg width={16} height={16} viewBox="0 0 16 16" fill="none">
+            <path d="M8 2C5.8 2 4 3.8 4 6c0 1.5.8 2.8 2 3.5V11h4V9.5C11.2 8.8 12 7.5 12 6c0-2.2-1.8-4-4-4z" fill="#000" />
+            <rect x={6} y={11} width={4} height={2} rx={1} fill="#000" />
+          </svg>
+        </div>
+        <Spinner />
+        <span style={{ fontSize: 13, color: C.t2 }}>Loading NutriPlanner…</span>
+      </div>
+    </div>
+  );
+
+  // Show Auth page if not logged in
+  if (!authUser) return <AuthPage onAuth={handleAuth} />;
+
+  // Show Onboarding if no prediction yet
+  if (view === "onboarding") return (
+    <OnboardingForm onSubmit={handleSubmit} submitting={submitting} />
+  );
 
   return (
     <>
       <div style={{ display:"flex", height:"100vh", overflow:"hidden", background:C.bg0 }}>
-        <Sidebar active={page} onNav={setPage} result={result} />
+        <Sidebar active={page} onNav={setPage} result={result} user={authUser} onLogout={handleLogout} />
         <main style={{ flex:1, overflowY:"auto" }}>
           {page === "dashboard"   && <DashboardPage  form={form} result={result} />}
           {page === "meals"       && <MealPlanPage   form={form} result={result} />}
@@ -1447,6 +1851,7 @@ export default function App() {
           {page === "calculator"  && <CalculatorPage form={form} />}
           {page === "progress"    && <ProgressPage   form={form} result={result} />}
           {page === "report"      && <ReportPage     form={form} result={result} />}
+          {page === "history"     && <HistoryPage />}
           {page === "metrics"     && <MetricsPage />}
           {page === "aichat"      && <AIChatPage     form={form} result={result} />}
         </main>
