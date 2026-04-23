@@ -86,11 +86,9 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
-    # ── CORS ───────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.allowed_origins,
-        allow_origin_regex=r"https://.*\.vercel\.app",
+        allow_origins=settings.allowed_origins + ["https://nutri-aiforanas.vercel.app"],
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
