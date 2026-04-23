@@ -52,6 +52,9 @@ class Settings(BaseSettings):
             v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
         return v
     
+    db_pool_size: int = 10
+    db_max_overflow: int = 5
+    
     # ── Redis ──────────────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"
     

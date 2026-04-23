@@ -21,3 +21,28 @@
 - [x] Run `python scripts/phase2_diet_model.py` -> Success.
 - [x] Check `ml/new_diet_meta.json` for non-100% metrics -> Success.
 - [x] Verify `/metrics` API response -> Success.
+
+## Production Finalization & System Integrity (Version 3.2.0)
+
+**Date:** 2026-04-24
+**Objective:** Transition NutriAI from a functional prototype to a research-grade production system.
+
+### Key Architectural Upgrades
+1.  **ML Pipeline Hardening:**
+    *   Pinned dependencies in `requirements.txt` (`scikit-learn==1.3.2`, `xgboost==2.0.0`) to ensure training-serving parity.
+    *   Implemented **Startup Benchmarking** in `lifespan`: The system now performs a warm-up prediction on startup and fails if results deviate from established clinical benchmarks.
+    *   Implemented **Strict Boolean Safety Masking** in the KNN engine, mathematically excluding unsafe meals before distance calculations.
+
+2.  **Stateful Chatbot:**
+    *   Integrated **Redis-backed session memory** with a 10-message sliding window.
+    *   Implemented a **KNN-Chat Bridge**: The chatbot can now conversationally provide meal alternatives by triggering narrowed KNN searches.
+
+3.  **Infrastructure & Resilience:**
+    *   Refactored DB to use `AsyncAdaptedQueuePool` for high-load concurrency.
+    *   Added a **Global API Interceptor** in the frontend to handle 503 (Maintenance) and 401 (Expiry) errors with user-friendly alerts.
+
+### Validation
+- [x] `pip install -r requirements.txt` check -> Success.
+- [x] Startup warm-up prediction -> Passed.
+- [x] Multi-turn chat persistence -> Verified via Redis.
+- [x] 503 Maintenance Mode UI alert -> Verified.

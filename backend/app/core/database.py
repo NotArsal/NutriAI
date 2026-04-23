@@ -20,12 +20,11 @@ log = get_logger("database")
 engine = create_async_engine(
     settings.database_url,
     echo=False,
-    # NullPool: no idle connections kept alive — each checkout opens a fresh
-    # TCP connection and closes it on release.  This means:
-    #   • The app starts even when Postgres is unreachable.
-    #   • pool_pre_ping is irrelevant (no pool to ping).
-    #   • Slightly higher latency per request, but zero "stale socket" crashes.
-    poolclass=NullPool,
+    # AsyncAdaptedQueuePool: Production-ready connection pooling.
+    # We maintain a pool of open connections to reduce TCP handshake latency.
+    pool_size=settings.db_pool_size,
+    max_overflow=settings.db_max_overflow,
+    pool_pre_ping=True, # Validates connections before checkout
 )
 
 async_session_maker = async_sessionmaker(

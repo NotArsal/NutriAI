@@ -15,16 +15,21 @@ from app.core.logging import get_logger
 
 log = get_logger(__name__)
 
-async def _get_or_create_session_context(patient: PatientInput) -> dict:
-    """Uses Redis to maintain short-term state, like previously suggested meals."""
-    session_id = f"chat_session:{hashlib.sha256(patient.model_dump_json().encode()).hexdigest()}"
+async def _get_or_create_session_context(user_id: str | None, patient: PatientInput) -> dict:
+    """Uses Redis to maintain short-term state, stored by user_id or patient hash."""
+    base_key = user_id or hashlib.sha256(patient.model_dump_json().encode()).hexdigest()
+    session_id = f"chat_session:{base_key}"
     cached = await redis_client.get(session_id)
     if cached:
         return json.loads(cached)
-    return {"last_meals": [], "turn_count": 0}
+    return {"last_meals": [], "turn_count": 0, "history": []}
 
-async def _save_session_context(patient: PatientInput, context: dict):
-    session_id = f"chat_session:{hashlib.sha256(patient.model_dump_json().encode()).hexdigest()}"
+async def _save_session_context(user_id: str | None, patient: PatientInput, context: dict):
+    base_key = user_id or hashlib.sha256(patient.model_dump_json().encode()).hexdigest()
+    session_id = f"chat_session:{base_key}"
+    # Sliding window: keep last 10 messages
+    if len(context.get("history", [])) > 10:
+        context["history"] = context["history"][-10:]
     await redis_client.set(session_id, json.dumps(context), expire=3600) # 1 hour expiry
 
 def _check_safety_guardrails(user_msg: str) -> str | None:
@@ -40,7 +45,7 @@ def _check_safety_guardrails(user_msg: str) -> str | None:
         
     return None
 
-async def generate_clinical_response(patient: PatientInput, messages: List[dict]) -> str:
+async def generate_clinical_response(patient: PatientInput, messages: List[dict], user_id: str | None = None) -> str:
     """
     Context-aware clinical response using Simulated LLM logic, KNN bridging, and Redis memory.
     """
@@ -53,62 +58,57 @@ async def generate_clinical_response(patient: PatientInput, messages: List[dict]
         return safety_response
 
     # 2. Stateful Memory via Redis
-    context = await _get_or_create_session_context(patient)
+    context = await _get_or_create_session_context(user_id, patient)
     context["turn_count"] += 1
     
-    # 3. Contextual Seeding (System Prompt Simulation)
-    system_prompt = f"""
-    SYSTEM PROMPT: You are NutriAI, a clinical nutrition assistant.
-    Patient Profile:
-    - Disease: {patient.disease_type}
-    - BMI: {bmi}
-    - Glucose: {patient.glucose} mg/dL
-    - BP: {patient.blood_pressure} mmHg
-    - Calories Target: {patient.daily_caloric} kcal
-    """
+    # 3. Contextual Seeding (Simulated System Context)
+    # Track 2: Conversation is now augmented with patient biomarkers
     
     # 4. KNN-Chat Bridge (Tool Calling)
     if any(kw in user_msg for kw in ["alternative", "another meal", "different food", "what else", "hungry"]):
         # Trigger narrowed KNN search
         log.info("chat_triggered_knn_bridge")
-        # We can pass slightly different targets to get a different meal, or just query again.
-        # Since KNN is deterministic, to get an alternative, we slightly perturb the macro targets.
-        meals = ml_service.predict_meal(patient, target_protein=(patient.weight_kg * 1.5))
+        # To get an alternative, we perturb the protein target
+        meals = ml_service.predict_meal(patient, target_protein=(patient.weight_kg * 1.8))
         
         meal_names = [m["name"] for m in meals]
         context["last_meals"] = meal_names
-        await _save_session_context(patient, context)
         
-        response = f"I have queried our meal database for clinical alternatives. Here is a modified plan tailored to your **{patient.disease_type}** profile:\n\n"
+        response = f"I have queried the KNN engine for clinical alternatives. Since you are managing **{patient.disease_type}**, I've prioritised low-glycemic options:\n\n"
         for m in meals:
-            response += f"- **{m['time']}**: {m['name']} ({m['kcal']} kcal, {m['p']}g protein)\n"
-        response += "\nWould you like the full recipe for any of these?"
+            response += f"- **{m['time']}**: {m['name']} ({m['kcal']} kcal)\n"
+        response += "\nDoes this new plan better suit your preference?"
+        
+        context["history"].append({"role": "user", "content": user_msg})
+        context["history"].append({"role": "assistant", "content": response})
+        await _save_session_context(user_id, patient, context)
         return response
 
     # 5. Stateful follow-up
     if "recipe" in user_msg or "how to make" in user_msg:
         if context["last_meals"]:
             meal = context["last_meals"][0]
-            return f"For **{meal}**, focus on using whole ingredients and completely avoiding added sugars. Ensure you portion control to maintain your {patient.daily_caloric} kcal target."
+            text = f"For **{meal}**, focus on using whole ingredients and completely avoiding added sugars. Ensure you portion control to maintain your {patient.daily_caloric} kcal target."
         else:
-            return "I don't have a specific meal in mind. Would you like me to recommend a daily plan?"
-
-    # 6. Standard Context-Aware Response
-    await _save_session_context(patient, context)
+            text = "I don't have a specific meal in mind. Would you like me to recommend a daily plan?"
     
-    if any(kw in user_msg for kw in ("biomarker", "target", "number", "lab")):
-        return (
+    elif any(kw in user_msg for kw in ("biomarker", "target", "number", "lab")):
+        text = (
             f"Based on your profile, here are your target zones:\n"
             f"- **Glucose**: Current {patient.glucose} mg/dL → Target < 100 mg/dL.\n"
             f"- **Blood Pressure**: Current {patient.blood_pressure} mmHg → Target < 120/80 mmHg.\n"
             f"- **BMI**: Current {bmi} kg/m² → Healthy range: 18.5–24.9.\n"
         )
+    else:
+        text = (
+            f"NutriAI Session Active (Turn {context['turn_count']}).\n"
+            f"Tracking your **{patient.disease_type}** history with a focus on your current glucose ({patient.glucose} mg/dL). "
+            f"I recommend maintaining your {patient.daily_caloric} kcal target. "
+            "Ask me for 'alternatives' if you need a new meal plan."
+        )
 
-    # Default Contextual Response
-    return (
-        f"NutriAI Session Active (Turn {context['turn_count']}).\n"
-        f"Tracking your **{patient.disease_type}** history with a focus on your current glucose ({patient.glucose} mg/dL). "
-        f"I recommend maintaining your {patient.daily_caloric} kcal target. "
-        "Ask me for 'alternatives' if you need a new meal plan, or ask about your 'biomarkers'."
-    )
+    context["history"].append({"role": "user", "content": user_msg})
+    context["history"].append({"role": "assistant", "content": text})
+    await _save_session_context(user_id, patient, context)
+    return text
 

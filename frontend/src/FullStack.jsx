@@ -11,14 +11,32 @@ const getToken = () => localStorage.getItem("nutriai_token");
 const setToken = (t) => localStorage.setItem("nutriai_token", t);
 const clearToken = () => localStorage.removeItem("nutriai_token");
 
-// Authenticated fetch — always injects Bearer token if present
+// Authenticated fetch — always injects Bearer token if present with global interceptor logic
 const apiFetch = async (path, opts = {}) => {
   const token = getToken();
   const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
   if (token) headers["Authorization"] = `Bearer ${token}`;
-  const res = await fetch(`${BACKEND_URL}${path}`, { ...opts, headers });
-  if (res.status === 401) { clearToken(); window.location.reload(); }
-  return res;
+  
+  try {
+    const res = await fetch(`${BACKEND_URL}${path}`, { ...opts, headers });
+    
+    // Interceptor: Handle Session Expiry (401)
+    if (res.status === 401) { 
+      clearToken(); 
+      window.location.reload(); 
+      return res;
+    }
+    
+    // Interceptor: Handle Database/Service Down (503)
+    if (res.status === 503) {
+      alert("⚠️ Clinical Database Offline: The nutrition engine is active, but authentication and history services are currently in maintenance mode. Please try again shortly.");
+    }
+    
+    return res;
+  } catch (err) {
+    console.error("API_FETCH_ERROR", err);
+    throw err;
+  }
 };
 
 const mapFormToPatient = (f) => ({

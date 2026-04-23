@@ -62,9 +62,11 @@ nutriai/
 - **Data isolation** — every query is scoped to `WHERE user_id = current_user.id`
 - **Graceful DB degradation** — predictions work without a database; auth/history return HTTP 503 with a friendly message instead of crashing
 - **ML inference** — diet classification, health risk scoring (0–100 with 90% CI), meal recommendations, SHAP explainability
-- **AI consultation** — context-aware clinical chat seeded with patient biomarkers
+- **Stateful AI consultation** — Redis-backed memory for multi-turn dialogues; context-aware clinical assistant
+- **KNN-Chat Bridge** — Chatbot can trigger narrowed meal searches for 'alternatives' conversationally
+- **Production Resilience** — Async connection pooling and global API interceptors for 503/401 handling
 - **Rate limiting** — per-IP via slowapi; configurable per route
-- **Redis caching** — 24-hour prediction result cache keyed on input hash
+- **Redis caching** — 24-hour prediction result cache keyed on input hash; session state management
 
 ## Local Development
 

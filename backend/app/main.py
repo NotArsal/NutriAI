@@ -44,6 +44,12 @@ async def lifespan(app: FastAPI):
     ml_service.load()
     log.info("ml_models_loaded", models_loaded=ml_service._loaded)
     
+    # Startup Benchmarking
+    if not ml_service.benchmark():
+        log.critical("startup_benchmark_failed", detail="Model output does not match establishing benchmark.")
+        raise RuntimeError("ML model integrity check failed. Service cannot start.")
+    log.info("startup_benchmark_passed")
+    
     # Database migrations are now handled by Alembic.
     # To run migrations: `alembic upgrade head`
     log.info("database_migrations_delegated_to_alembic")
