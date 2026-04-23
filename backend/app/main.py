@@ -14,6 +14,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -43,13 +44,17 @@ async def lifespan(app: FastAPI):
     ml_service.load()
     log.info("ml_models_loaded", models_loaded=ml_service._loaded)
     
-    # Init DB schema (in a production environment, you should use Alembic for migrations instead of create_all)
+    # Init DB schema (dev convenience; use Alembic for production migrations)
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
         log.info("database_tables_created")
     except Exception as e:
-        log.error("database_init_failed", error=str(e))
+        log.warning(
+            "database_unavailable",
+            error=str(e),
+            hint="Auth and history endpoints will return HTTP 503 until a database is attached.",
+        )
     
     # Init Redis
     try:
@@ -96,9 +101,18 @@ def create_app() -> FastAPI:
     # ── Logging middleware ─────────────────────────────────────────────
     app.add_middleware(LoggingMiddleware)
 
-    # ── Rate limiting ──────────────────────────────────────────────────
+    # ── Rate limiting ──────────────────────────────────────────────
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    # ── Global DB-connection error handler (last resort) ───────────
+    @app.exception_handler(OSError)
+    async def db_conn_error_handler(request: Request, exc: OSError) -> JSONResponse:
+        """Convert any stray ConnectionRefusedError into a clean 503 JSON."""
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Database is temporarily unavailable. Predictions still work — auth and history require a database."},
+        )
 
     # ── Routers ────────────────────────────────────────────────────────
     app.include_router(health.router)

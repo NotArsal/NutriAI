@@ -497,6 +497,7 @@ function AuthPage({ onAuth }) {
         });
         if (!regRes.ok) {
           const d = await regRes.json();
+          if (regRes.status === 503) throw new Error("The database is not connected yet. Predictions still work, but account creation requires a database. Please check back later.");
           throw new Error(d.detail || "Registration failed");
         }
       }
@@ -511,6 +512,7 @@ function AuthPage({ onAuth }) {
       });
       if (!loginRes.ok) {
         const d = await loginRes.json();
+        if (loginRes.status === 503) throw new Error("The database is not connected yet. Predictions still work without an account. Please check back later.");
         throw new Error(d.detail || "Login failed");
       }
       const { access_token } = await loginRes.json();
