@@ -254,6 +254,8 @@ class MLService:
         query_vec = np.hstack([num_vec_scaled, np.array([cat_vec])])
         
         # KNN search
+        distances, indices = self.meal_knn.kneighbors(query_vec)
+        
         # Return the best match (the closest neighbor) as a full day's plan
         best_idx = indices[0][0]
         row = self.meal_database.iloc[best_idx]

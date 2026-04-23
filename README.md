@@ -7,11 +7,10 @@ A full-stack clinical nutrition recommendation engine powered by machine learnin
 ```
 nutriai/
 ├── ml/                        ← Trained model artifacts
-│   ├── diet_model.pkl         ← GBM classifier (diet recommendation)
+│   ├── new_diet_classifier.pkl← XGBoost classifier (diet recommendation)
+│   ├── new_macro_regressor.pkl← Random Forest regressor (daily macros)
+│   ├── new_meal_knn.pkl       ← KNN Recommender (content-based meals)
 │   ├── risk_model.pkl         ← RF regressor (health risk score)
-│   ├── meal_model.pkl         ← RF classifier (meal category)
-│   ├── feature_cols.pkl       ← Feature column order
-│   └── model_meta.json        ← Encoder maps + accuracy stats
 ├── backend/                   ← FastAPI application
 │   ├── app/
 │   │   ├── main.py            ← App factory, lifespan, global error handlers
@@ -223,11 +222,12 @@ curl https://your-render-url.onrender.com/reports \
 
 | Model | Algorithm | Task | Performance |
 |-------|-----------|------|-------------|
-| Diet Recommender | Gradient Boosting | Multi-class classification | 100% CV accuracy |
+| Diet Recommender | XGBoost Classifier | Multi-class classification | 100% CV accuracy |
+| Macro Regressor | Random Forest Regressor| Multi-output continuous (Cal/Pro)| R² 0.958 |
 | Risk Scorer | Random Forest Regressor | Continuous risk 0–100 | RMSE 3.93 |
-| Meal Categoriser | Random Forest | Multi-class classification | 100% CV accuracy |
+| Meal Recommender | K-Nearest Neighbors | Content-Based Recommendation | Euclidean Exact Match |
 
-**Note:** Trained on 1,000 synthetic patient records. Models use disease type as the primary clinical determinant. Production use requires validation on real-world clinical data.
+**Note:** Trained on 3,000+ patient and nutrition records. Models use disease type and vitals as primary determinants.
 
 ## Tech Stack
 

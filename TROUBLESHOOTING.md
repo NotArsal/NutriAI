@@ -48,6 +48,13 @@ This document tracks common errors encountered during the deployment of the Nutr
 ---
 
 ## 5. ML: `shap_init_failed` Warning
-**Warning:** `GradientBoostingClassifier is only supported for binary classification right now!`
-**Explanation:** This is a limitation of the SHAP library's TreeExplainer with specific multi-class models.
+**Warning:** SHAP TreeExplainer fails on certain multiclass models.
+**Explanation:** This is a limitation of the SHAP library's TreeExplainer with specific multi-class models like XGBoost.
 **Fix:** We implemented a try/except block in the `ml_service.py`. The app will gracefully disable SHAP explanations for that specific model but will continue to provide accurate predictions and risk scores.
+
+---
+
+## 6. Backend: `ImportError: cannot import name 'MODEL_CARD_DATA'`
+**Error:** The Render deployment fails and exits with status 1.
+**Cause:** The metadata variable `MODEL_CARD_DATA` was missing from `ml_service.py`, causing the `/health` endpoint router to crash on import.
+**Fix:** Restored `MODEL_CARD_DATA` and compatibility dictionaries (`meal_classes`, `meta`) inside `app/services/ml_service.py`. The API router can now query the model's properties safely.
