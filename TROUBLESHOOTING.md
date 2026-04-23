@@ -46,3 +46,10 @@
 - [x] Startup warm-up prediction -> Passed.
 - [x] Multi-turn chat persistence -> Verified via Redis.
 - [x] 503 Maintenance Mode UI alert -> Verified.
+
+### Hotfix: NameError in Chat Router
+**Date:** 2026-04-24
+**Issue:** `NameError: name 'get_logger' is not defined` in `chat.py`.
+**Cause:** Regression during v3.2.0 refactor where several imports were accidentally removed.
+**Fix:** Restored `get_logger`, `ChatRequest`, `ChatResponse`, and `generate_clinical_response` imports.
+**Status:** Resolved and redeployed.
