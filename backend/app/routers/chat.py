@@ -4,7 +4,10 @@ app/routers/chat.py — /chat endpoint.
 from __future__ import annotations
 
 from app.api.deps import get_current_user
+from app.core.logging import get_logger
 from app.models.user import User
+from app.schemas.responses import ChatRequest, ChatResponse
+from app.services.chat_service import generate_clinical_response
 from fastapi import APIRouter, HTTPException, Request, Depends
 
 router = APIRouter(prefix="/chat", tags=["Chat"])
