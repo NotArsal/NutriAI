@@ -156,3 +156,10 @@
 3.  **Recharts Hardcode:** Replaced `height="100%"` with a fixed numerical `height={300}` on `ResponsiveContainer` to bypass flexbox height resolution delays entirely.
 **Status:** Resolved.
 
+## Known Issue: SHAP Explainer UTF-8 Warning
+**Date:** 2026-04-24
+**Issue:** Production startup logs report `[warning] shap_diet_explainer_failed error="'utf-8' codec can't decode byte..."`.
+**Cause:** The `shap.TreeExplainer` attempts to decode the internal C-level byte dump of the XGBoost model but encounters an encoding mismatch in the Render Linux environment.
+**Impact:** Non-critical. The exception is cleanly caught by the `_try_init_shap()` fallback mechanism. The `/predict` endpoint will function normally but omit the `shap_explanation` from the response payload. No further patching is required for stability.
+
+
