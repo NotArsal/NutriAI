@@ -88,10 +88,11 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.allowed_origins + ["https://nutri-aiforanas.vercel.app"],
+        allow_origins=settings.allowed_origins,
         allow_methods=["*"],
         allow_headers=["*"],
         allow_credentials=True,
+        expose_headers=["*"],
     )
 
     # ── Logging middleware ─────────────────────────────────────────────

@@ -29,14 +29,14 @@ class Settings(BaseSettings):
     def allowed_origins(self) -> List[str]:
         raw = os.environ.get("ALLOWED_ORIGINS", self.allowed_origins_raw)
         parsed = [o.strip() for o in raw.split(",") if o.strip()]
-        if not parsed:
-            parsed = [
-                "http://localhost:5173",
-                "http://localhost:4173",
-                "http://localhost:3000",
-                "https://nutri-aiforanas.vercel.app",
-            ]
-        return parsed
+        # Always include local and current Vercel production
+        fallbacks = [
+            "http://localhost:5173",
+            "http://localhost:4173",
+            "http://localhost:3000",
+            "https://nutri-aiforanas.vercel.app",
+        ]
+        return list(set(parsed + fallbacks))
 
     # ── Database ───────────────────────────────────────────────────────
     database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nutriplanner"
