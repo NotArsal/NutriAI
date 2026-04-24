@@ -159,15 +159,22 @@ class MLService:
             return
         try:
             import shap
-            # SHAP TreeExplainer might fail for multiclass XGBoost depending on version
+            # Pre-initialize explainers
             try:
                 self._diet_explainer = shap.TreeExplainer(self.diet_model)
-            except Exception:
-                pass
-            self._risk_explainer = shap.TreeExplainer(self.risk_model)
-            self._shap_available = True
+            except Exception as e:
+                log.warning("shap_diet_explainer_failed", error=str(e))
+            
+            try:
+                self._risk_explainer = shap.TreeExplainer(self.risk_model)
+            except Exception as e:
+                log.warning("shap_risk_explainer_failed", error=str(e))
+                
+            self._shap_available = (self._diet_explainer is not None or self._risk_explainer is not None)
+            log.info("shap_init_complete", available=self._shap_available)
         except Exception as exc:
             log.warning("shap_init_failed", error=str(exc))
+            self._shap_available = False
             
     def explain_diet(self, X: np.ndarray, top_n: int = 5) -> Optional[Dict]:
         if not self._shap_available or not self._diet_explainer:

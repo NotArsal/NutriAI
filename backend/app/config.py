@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     # ── App ────────────────────────────────────────────────────────────
     app_name: str = "NutriPlanner API"
-    app_version: str = "3.0.0"
+    app_version: str = "3.5.0"
     environment: str = "development"  # development | staging | production
     log_level: str = "INFO"
 
@@ -53,8 +53,8 @@ class Settings(BaseSettings):
             v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
         return v
     
-    db_pool_size: int = 10
-    db_max_overflow: int = 5
+    db_pool_size: int = 5
+    db_max_overflow: int = 10
     
     # ── Redis ──────────────────────────────────────────────────────────
     redis_url: str = "redis://localhost:6379/0"

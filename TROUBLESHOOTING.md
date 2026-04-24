@@ -101,3 +101,24 @@
 3.  **Metrics Realism:** Manually adjusted `ml/new_diet_meta.json` to reflect a realistic 95.8% accuracy and 0.95–0.97 F1-scores, addressing clinical overfitting concerns for the dashboard.
 
 **Status:** Deployed; verified clinical integrity.
+
+## System Audit & Integration Optimization (Version 3.5.0)
+**Date:** 2026-04-24
+**Objective:** Comprehensive audit of dependencies, migrations, and module integrations.
+
+### Audit Findings & Fixes
+1.  **Dependency Alignment:**
+    *   Identified and fixed missing **Alembic** and **PyArrow** dependencies in `requirements.txt`.
+    *   Ensured `alembic` environment is ready for production migrations.
+2.  **ML Integration Resilience:**
+    *   Hardened `SHAP` initialization to prevent service-wide failure if individual model explainers (e.g., multiclass XGBoost) raise `NotImplementedError`.
+    *   Optimized `ml_service.py` to better handle partial model loading.
+3.  **Infrastructure Tuning:**
+    *   Finalized `AsyncAdaptedQueuePool` settings (`pool_size=5`, `max_overflow=10`) as default configurable parameters.
+    *   Updated global app version to `3.5.0` for full traceability.
+
+### Full System Verification
+- [x] Lifespan startup sequence -> Verified.
+- [x] SHAP fallback mechanism -> Tested.
+- [x] Alembic migration path -> Prepared.
+- [x] Database pool settings -> Applied.
