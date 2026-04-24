@@ -372,9 +372,9 @@ class MLService:
         if p.allergies and p.allergies != "None":
             # Exclude meals whose name or description contains the allergy keyword
             allergy_kw = p.allergies.lower()
-            mask = mask & (~self.meal_database['Breakfast Suggestion'].str.lower().str.contains(allergy_kw))
-            mask = mask & (~self.meal_database['Lunch Suggestion'].str.lower().str.contains(allergy_kw))
-            mask = mask & (~self.meal_database['Dinner Suggestion'].str.lower().str.contains(allergy_kw))
+            mask = mask & (~self.meal_database['Breakfast Suggestion'].str.lower().str.contains(allergy_kw, na=False))
+            mask = mask & (~self.meal_database['Lunch Suggestion'].str.lower().str.contains(allergy_kw, na=False))
+            mask = mask & (~self.meal_database['Dinner Suggestion'].str.lower().str.contains(allergy_kw, na=False))
         
         # Check if we have valid meals left
         valid_indices = self.meal_database[mask].index.tolist()
@@ -410,10 +410,10 @@ class MLService:
         row = self.meal_database.iloc[best_idx]
         
         # Split daily macros roughly across 4 meals to render nicely
-        kcal = round(row['Calories'] / 4)
-        pro = round(row['Protein'] / 4)
-        fat = round(row.get('Fat', 10) / 4)
-        carb = round(row.get('Carbohydrates', 30) / 4)
+        kcal = round(float(np.nan_to_num(row.get('Calories', ml_cal), nan=ml_cal)) / 4)
+        pro = round(float(np.nan_to_num(row.get('Protein', ml_pro), nan=ml_pro)) / 4)
+        fat = round(float(np.nan_to_num(row.get('Fat', 10), nan=10)) / 4)
+        carb = round(float(np.nan_to_num(row.get('Carbohydrates', 30), nan=30)) / 4)
 
         results = [
             {"time": "Breakfast", "name": row.get('Breakfast Suggestion', 'Healthy Oatmeal'), "kcal": kcal, "p": pro, "f": fat, "c": carb},

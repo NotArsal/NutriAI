@@ -145,3 +145,14 @@
 3.  **Recharts Dimensions:** Explicitly passed `minWidth={0}` and `minHeight={300}` directly as props to the `ResponsiveContainer` component to resolve calculation failures during flexbox hydration.
 **Status:** Deployed and fully integrated.
 
+## Hotfix: Pydantic & Pandas 500 Errors (Version 3.5.3)
+**Date:** 2026-04-24
+**Issue 1:** Both `/metrics` and `/predict` endpoints were intermittently failing with `500 Internal Server Error`, which Render's proxy masked as a CORS failure (`TypeError: Failed to fetch`).
+**Issue 2:** Recharts layout warning continued.
+
+**Fixes:**
+1.  **Metrics Pydantic Crash:** Updated `MetricsResponse` schema to type `classification_report` as `Dict[str, Any]` instead of `Dict[str, dict]`. The inclusion of `"accuracy": 0.958` (a float) was causing Pydantic to crash on validation.
+2.  **Meal Recommender NaN Crash:** Safeguarded the `predict_meal` allergy boolean mask by adding `na=False` to `.str.contains()`. This prevents pandas from crashing if the dataset contains `NaN` values in the meal suggestion strings. Also wrapped macro extraction in `np.nan_to_num` to ensure JSON serialization safety.
+3.  **Recharts Hardcode:** Replaced `height="100%"` with a fixed numerical `height={300}` on `ResponsiveContainer` to bypass flexbox height resolution delays entirely.
+**Status:** Resolved.
+

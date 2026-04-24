@@ -65,11 +65,13 @@ class TrendCurve(BaseModel):
     metric: str
     data: List[Point]
 
+from typing import Any, Dict, List, Literal, Optional
+
 class MetricsResponse(BaseModel):
     accuracy: float
     confusion_matrix: List[List[int]]
     classes: List[str]
-    classification_report: Dict[str, dict]
+    classification_report: Dict[str, Any]
 
 class PredictResponse(BaseModel):
     # Diet

@@ -1,0 +1,24 @@
+- generic [ref=e4]:
+  - generic [ref=e5]:
+    - img [ref=e7]
+    - generic [ref=e11]:
+      - generic [ref=e12]: NutriPlanner
+      - generic [ref=e13]: Clinical Nutrition Platform
+  - generic [ref=e14]:
+    - generic [ref=e15]:
+      - button "Sign in" [ref=e16] [cursor=pointer]
+      - button "Create account" [ref=e17] [cursor=pointer]
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - generic [ref=e20]: Email address
+        - textbox "you@example.com" [ref=e21]
+      - generic [ref=e22]:
+        - generic [ref=e23]: Password
+        - generic [ref=e24]:
+          - textbox "Your password" [ref=e25]
+          - button "Show" [ref=e26] [cursor=pointer]
+      - button "Sign in to NutriPlanner" [ref=e27] [cursor=pointer]
+    - generic [ref=e28]:
+      - text: Don't have an account?
+      - button "Create one" [ref=e29] [cursor=pointer]
+  - generic [ref=e30]: Your data is private and only visible to you. For informational purposes only.
