@@ -102,7 +102,8 @@ class MLService:
             self.diet_model = joblib.load(model_dir / "new_diet_classifier.pkl")
             self.diet_features = joblib.load(model_dir / "new_diet_features.pkl")
             with open(model_dir / "new_diet_meta.json") as f:
-                diet_meta = json.load(f)
+                self.meta = json.load(f)
+                diet_meta = self.meta
             self.diet_encoders = diet_meta["feature_encoders"]
             self.diet_classes = diet_meta["target_classes"]
             

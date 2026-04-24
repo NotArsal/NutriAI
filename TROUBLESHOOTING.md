@@ -132,3 +132,16 @@
 1.  **Frontend Layout:** Added `minHeight: 300` and `minWidth: 0` to the ResponsiveContainer parent in `FullStack.jsx`. This prevents Recharts from attempting to render with zero/negative dimensions during initial hydration or flexbox calculation.
 2.  **CORS Whitelisting:** Explicitly added both Vercel and Render production domains to the `CORSMiddleware` in `main.py` and specified allowed methods to ensure preflight (OPTIONS) reliability.
 **Status:** Patched; awaiting production verification.
+
+## Cross-Component State & Metadata Fixes (Version 3.5.2)
+**Date:** 2026-04-24
+**Issue 1:** The `/metrics` endpoint continued to fail with CORS blocks.
+**Issue 2:** Foods added in "Food Search" were not appearing in the "Meal Plan".
+**Issue 3:** Recharts layout warning persisted.
+
+**Fixes:**
+1.  **Backend Metadata Fix:** Identified that `ml_service.py` was failing to assign the loaded `new_diet_meta.json` to `self.meta`. This caused `health.py` to use a fallback dictionary that failed Pydantic validation (`Dict[str, dict]`), returning a 500 Internal Server Error which was masked by the browser as a CORS failure. Fixed the assignment, restoring true accuracy data (95.8%) to the dashboard.
+2.  **Frontend State Lifting:** Lifted the `foodLog` state from `FoodSearchPage` up to the root `App` component and passed it down to `MealPlanPage`. Added snacks/foods now dynamically append to the AI-generated meal schedule.
+3.  **Recharts Dimensions:** Explicitly passed `minWidth={0}` and `minHeight={300}` directly as props to the `ResponsiveContainer` component to resolve calculation failures during flexbox hydration.
+**Status:** Deployed and fully integrated.
+

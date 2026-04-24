@@ -895,9 +895,20 @@ function filterMealsByAllergen(meals, allergies) {
   });
 }
 
-function MealPlanPage({ form, result }) {
+function MealPlanPage({ form, result, foodLog = [] }) {
   const rawMeals = result.recommended_meals || [];
-  const meals = filterMealsByAllergen(rawMeals, form.allergies);
+  
+  // Combine AI recommendations with user's food log
+  const userAddedMeals = foodLog.map(f => ({
+    time: "Added Snack",
+    name: f.name,
+    kcal: f.kcal,
+    p: f.p,
+    f: f.f || f.fat || 0,
+    c: f.c
+  }));
+  
+  const meals = [...filterMealsByAllergen(rawMeals, form.allergies), ...userAddedMeals];
   const plan = DIET_PLANS[result.diet];
   const totalKcal = meals.reduce((a,m) => a+m.kcal, 0);
 
@@ -953,10 +964,9 @@ function MealPlanPage({ form, result }) {
 /* ═══════════════════════════════════════════════════════════════════
    PAGE: FOOD SEARCH
 ═══════════════════════════════════════════════════════════════════ */
-function FoodSearchPage() {
+function FoodSearchPage({ foodLog, setFoodLog }) {
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("All");
-  const [log, setLog] = useState([]);
   const [results, setResults] = useState(FOOD_DB);
   const [loading, setLoading] = useState(false);
 
@@ -983,7 +993,7 @@ function FoodSearchPage() {
   }, [cat]);
 
   const filtered = results.filter(f => cat === "All" || f.cat === cat);
-  const totals = log.reduce((acc,f) => ({ kcal:acc.kcal+f.kcal, p:acc.p+f.p, fat:acc.fat+f.f, c:acc.c+f.c }), { kcal:0, p:0, fat:0, c:0 });
+  const totals = foodLog.reduce((acc,f) => ({ kcal:acc.kcal+f.kcal, p:acc.p+f.p, fat:acc.fat+f.f, c:acc.c+f.c }), { kcal:0, p:0, fat:0, c:0 });
 
   return (
     <div style={{ padding:24, display:"grid", gridTemplateColumns:"1fr 320px", gap:16, alignItems:"start" }}>
@@ -1020,7 +1030,7 @@ function FoodSearchPage() {
               <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                 <Mono color={C.green}>{f.kcal}</Mono>
                 <span style={{ fontSize:11, color:C.t2 }}>kcal</span>
-                <Btn small variant="secondary" onClick={() => setLog(l => [...l, f])}>+ Add</Btn>
+                <Btn small variant="secondary" onClick={() => setFoodLog(l => [...l, f])}>+ Add</Btn>
               </div>
             </div>
           ))}
@@ -1032,18 +1042,18 @@ function FoodSearchPage() {
       <Card style={{ padding:16 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
           <SectionLabel style={{ marginBottom:0 }}>Daily log</SectionLabel>
-          {log.length > 0 && <Btn small variant="ghost" onClick={() => setLog([])}>Clear</Btn>}
+          {foodLog.length > 0 && <Btn small variant="ghost" onClick={() => setFoodLog([])}>Clear</Btn>}
         </div>
-        {log.length === 0 ? (
+        {foodLog.length === 0 ? (
           <div style={{ padding:"20px 0", textAlign:"center", fontSize:12, color:C.t2 }}>Add foods from the left to log your intake</div>
         ) : (
           <>
-            {log.map((f,i) => (
+            {foodLog.map((f,i) => (
               <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"7px 0", borderBottom:`1px solid ${C.border}`, fontSize:12 }}>
                 <span style={{ color:C.t1 }}>{f.name}</span>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                   <Mono size={12} color={C.green}>{f.kcal}</Mono>
-                  <button onClick={() => setLog(l => l.filter((_,j) => j!==i))} style={{ background:"none", border:"none", color:C.t2, cursor:"pointer", fontSize:14, lineHeight:1 }}>×</button>
+                  <button onClick={() => setFoodLog(l => l.filter((_,j) => j!==i))} style={{ background:"none", border:"none", color:C.t2, cursor:"pointer", fontSize:14, lineHeight:1 }}>×</button>
                 </div>
               </div>
             ))}
@@ -1641,7 +1651,7 @@ function HistoryPage() {
         <Card style={{ padding: "20px 24px", marginBottom: 24 }}>
           <SectionLabel sub="Longitudinal tracking of Risk Score and Caloric Targets">Longitudinal Trends</SectionLabel>
           <div style={{ width: "100%", height: 300, minHeight: 300, minWidth: 0, marginTop: 16 }}>
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={300}>
               <LineChart data={[...data.predictions].reverse()} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
                 <XAxis 
@@ -1760,6 +1770,7 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [page, setPage] = useState("dashboard");
   const [submitting, setSubmitting] = useState(false);
+  const [foodLog, setFoodLog] = useState([]);
 
   // On mount: check if a token already exists in localStorage → fetch /auth/me
   useEffect(() => {
@@ -1833,8 +1844,8 @@ export default function App() {
         <Sidebar active={page} onNav={setPage} result={result} user={authUser} onLogout={handleLogout} />
         <main style={{ flex:1, overflowY:"auto" }}>
           {page === "dashboard"   && <DashboardPage  form={form} result={result} />}
-          {page === "meals"       && <MealPlanPage   form={form} result={result} />}
-          {page === "foodsearch"  && <FoodSearchPage />}
+          {page === "meals"       && <MealPlanPage   form={form} result={result} foodLog={foodLog} />}
+          {page === "foodsearch"  && <FoodSearchPage foodLog={foodLog} setFoodLog={setFoodLog} />}
           {page === "calculator"  && <CalculatorPage form={form} />}
           {page === "progress"    && <ProgressPage   form={form} result={result} />}
           {page === "report"      && <ReportPage     form={form} result={result} />}
