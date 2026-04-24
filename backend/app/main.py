@@ -88,8 +88,11 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.allowed_origins,
-        allow_methods=["*"],
+        allow_origins=settings.allowed_origins + [
+            "https://nutri-aiforanas.vercel.app",
+            "https://nutriai-29oa.onrender.com"
+        ],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD"],
         allow_headers=["*"],
         allow_credentials=True,
         expose_headers=["*"],

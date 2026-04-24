@@ -122,3 +122,13 @@
 - [x] SHAP fallback mechanism -> Tested.
 - [x] Alembic migration path -> Prepared.
 - [x] Database pool settings -> Applied.
+
+## Recharts Layout & CORS Hardening (Version 3.5.1)
+**Date:** 2026-04-24
+**Issue 1:** `The width(-1) and height(-1) of chart should be greater than 0`.
+**Issue 2:** Intermittent CORS block on `/metrics`.
+
+**Fixes:**
+1.  **Frontend Layout:** Added `minHeight: 300` and `minWidth: 0` to the ResponsiveContainer parent in `FullStack.jsx`. This prevents Recharts from attempting to render with zero/negative dimensions during initial hydration or flexbox calculation.
+2.  **CORS Whitelisting:** Explicitly added both Vercel and Render production domains to the `CORSMiddleware` in `main.py` and specified allowed methods to ensure preflight (OPTIONS) reliability.
+**Status:** Patched; awaiting production verification.

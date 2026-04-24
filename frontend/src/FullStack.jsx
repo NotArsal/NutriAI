@@ -1640,7 +1640,7 @@ function HistoryPage() {
       {data?.predictions?.length > 1 && (
         <Card style={{ padding: "20px 24px", marginBottom: 24 }}>
           <SectionLabel sub="Longitudinal tracking of Risk Score and Caloric Targets">Longitudinal Trends</SectionLabel>
-          <div style={{ width: "100%", height: 300, marginTop: 16 }}>
+          <div style={{ width: "100%", height: 300, minHeight: 300, minWidth: 0, marginTop: 16 }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={[...data.predictions].reverse()} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={C.border} vertical={false} />
